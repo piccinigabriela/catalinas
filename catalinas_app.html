@@ -463,6 +463,39 @@ tbody td{padding:11px 14px;color:var(--text);white-space:nowrap;}
   <nav class="bottom-nav" id="bottom-nav"></nav>
 </div>
 
+
+  <!-- EDIT MODAL -->
+  <div id="edit-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,31,56,0.7);z-index:500;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:var(--white);border-radius:var(--radius);padding:28px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg);">
+      <div style="font-family:'DM Serif Display',serif;font-size:1.2rem;color:var(--navy);margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid var(--cream);">✏️ Editar Reserva</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Departamento</label>
+          <select id="e-depto">
+            <option value="D01">PB5</option><option value="D02">1A</option>
+            <option value="D03">2C</option><option value="D04">2D</option>
+            <option value="D05">PR1</option><option value="D06">PR2</option><option value="D07">A</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Huésped</label><input type="text" id="e-huesped"></div>
+        <div class="form-group"><label>Nacionalidad</label><input type="text" id="e-nac"></div>
+        <div class="form-group"><label>Estado</label>
+          <select id="e-estado"><option value="Confirmada">Confirmada</option><option value="Pendiente">Pendiente</option><option value="Cancelada">Cancelada</option></select>
+        </div>
+        <div class="form-group"><label>Check-in</label><input type="date" id="e-checkin"></div>
+        <div class="form-group"><label>Check-out</label><input type="date" id="e-checkout"></div>
+        <div class="form-group"><label>USD / Noche</label><input type="number" id="e-precio"></div>
+        <div class="form-group"><label>Plataforma</label>
+          <select id="e-plataforma"><option value="Airbnb">Airbnb</option><option value="Directo">Directo</option><option value="Booking">Booking</option><option value="Otro">Otro</option></select>
+        </div>
+        <div class="form-group full"><label>Notas</label><textarea id="e-notas"></textarea></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-outline" onclick="closeEdit()">Cancelar</button>
+        <button class="btn btn-gold" onclick="saveEdit()">Guardar Cambios</button>
+      </div>
+    </div>
+  </div>
+
 <div class="toast" id="toast"><span id="toast-icon">✓</span><span id="toast-msg"></span></div>
 
 <script>
@@ -634,7 +667,7 @@ function renderReservas(){
     <td style="color:var(--red)">${fmt(c.air)}</td><td>${fmt(c.net)}</td>
     <td style="color:#8a6d00">${fmt(c.ges)}</td><td style="font-weight:700;color:var(--green)">${fmt(c.liq)}</td>
     <td><span class="badge ${b}">${r.estado}</span></td>
-    <td>${ia?`<button class="btn btn-danger btn-sm" onclick="delRes('${r.id}')">✕</button>`:''}</td></tr>`;
+    <td>${ia?`<div style="display:flex;gap:6px"><button class="btn btn-outline btn-sm" onclick="editRes('${r.id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="delRes('${r.id}')">✕</button></div>`:''}</td></tr>`;
   }).join('');
 }
 function delRes(id){if(cu!=='admin')return;if(!confirm('¿Eliminar reserva?'))return;reservas=reservas.filter(r=>r.id!==id);sd('cn_r',reservas);renderReservas();toast('Reserva eliminada');}
@@ -888,6 +921,49 @@ function waMsg(rid,rol){
   if(!num){toast('Configurá el número en Config.',false);return;}
   window.open('https://wa.me/'+num.replace(/\D/g,'')+'?text='+encodeURIComponent(msg),'_blank');
 }
+
+// ── EDITAR RESERVA ────────────────────────────────────────────────────────
+let editingId = null;
+function editRes(id){
+  if(cu!=='admin')return;
+  const r=reservas.find(x=>x.id===id);if(!r)return;
+  editingId=id;
+  document.getElementById('e-depto').value=r.depto;
+  document.getElementById('e-huesped').value=r.huesped;
+  document.getElementById('e-nac').value=r.nac||'';
+  document.getElementById('e-estado').value=r.estado;
+  document.getElementById('e-checkin').value=r.checkin;
+  document.getElementById('e-checkout').value=r.checkout;
+  document.getElementById('e-precio').value=r.precio;
+  document.getElementById('e-plataforma').value=r.plataforma;
+  document.getElementById('e-notas').value=r.notas||'';
+  const m=document.getElementById('edit-modal');
+  m.style.display='flex';
+}
+function closeEdit(){
+  document.getElementById('edit-modal').style.display='none';
+  editingId=null;
+}
+function saveEdit(){
+  const dep=document.getElementById('e-depto').value;
+  const ci=document.getElementById('e-checkin').value;
+  const co=document.getElementById('e-checkout').value;
+  const pre=parseFloat(document.getElementById('e-precio').value);
+  const hue=document.getElementById('e-huesped').value.trim();
+  if(!hue||!ci||!co||!pre){toast('Completá todos los campos',false);return;}
+  if(new Date(co)<=new Date(ci)){toast('Check-out debe ser posterior al check-in',false);return;}
+  const conf=reservas.find(r=>r.id!==editingId&&r.depto===dep&&r.estado!=='Cancelada'&&!(co<=r.checkin||ci>=r.checkout));
+  if(conf){toast('Superposición con '+conf.huesped+' en '+DN[dep],false);return;}
+  reservas=reservas.map(r=>{
+    if(r.id!==editingId)return r;
+    return{...r,depto:dep,huesped:hue,nac:document.getElementById('e-nac').value.trim(),checkin:ci,checkout:co,precio:pre,plataforma:document.getElementById('e-plataforma').value,estado:document.getElementById('e-estado').value,notas:document.getElementById('e-notas').value.trim()};
+  });
+  sd('cn_r',reservas);
+  closeEdit();
+  renderReservas();
+  toast('Reserva actualizada ✓');
+}
+
 </script>
 </body>
 </html>
