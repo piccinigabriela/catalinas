@@ -454,6 +454,16 @@ tbody td{padding:11px 14px;color:var(--text);white-space:nowrap;}
           <div id="wa-config-section"></div>
           <div class="btn-row"><button class="btn btn-gold" onclick="guardarConfig()">Guardar Configuración</button></div>
         </div>
+        <div class="card" style="margin-top:16px">
+          <div class="card-title"><div class="dot"></div>Sincronización Airbnb · iCal</div>
+          <p style="font-size:0.82rem;color:var(--text-soft);margin-bottom:16px">Pegá el link iCal de cada depto desde Airbnb → Calendario → Conectar con otro sitio web → Copiar enlace.</p>
+          <div id="ical-config-section"></div>
+          <div class="btn-row" style="margin-top:16px;gap:10px">
+            <button class="btn btn-outline" onclick="guardarIcal()">Guardar links iCal</button>
+            <button class="btn btn-gold" onclick="sincronizarIcal()">↻ Sincronizar ahora</button>
+          </div>
+          <div id="ical-status" style="margin-top:8px;font-size:0.78rem;color:var(--text-soft)"></div>
+        </div>
       </div>
 
     </div>
@@ -559,6 +569,10 @@ async function loadFromBins(){
     gastos=Array.isArray(gData.data)?gData.data:(Array.isArray(gData)?gData:[]);
     const waCloud=(cData.data&&cData.data.wa)?cData.data.wa:null;
     if(waCloud) sl('cn_wa',waCloud);
+    const icalCloud=(cData.data&&cData.data.ical)?cData.data.ical:null;
+    if(icalCloud) sl('cn_ical',icalCloud);
+    const bloqueos=(cData.data&&cData.data.bloqueos)?cData.data.bloqueos:null;
+    if(bloqueos) sl('cn_bloqueos',bloqueos);
   }catch(err){
     console.log('JSONBin load error, using local:',err);
     reservas=lo('cn_r',[]);
@@ -568,13 +582,41 @@ async function loadFromBins(){
 
 async function saveWaConfig(wa){
   sl('cn_wa',wa);
+  const ical=lo('cn_ical',{});
+  const bloqueos=lo('cn_bloqueos',{});
   try{
     await fetch(JURL+BIN_C,{
       method:'PUT',
       headers:{'Content-Type':'application/json','X-Master-Key':JKEY},
-      body:JSON.stringify({data:{wa}})
+      body:JSON.stringify({data:{wa,ical,bloqueos}})
     });
   }catch(err){console.log('JSONBin config save error:',err);}
+}
+
+async function saveIcalConfig(ical){
+  sl('cn_ical',ical);
+  const wa=lo('cn_wa',{admin_e:'',mant:''});
+  const bloqueos=lo('cn_bloqueos',{});
+  try{
+    await fetch(JURL+BIN_C,{
+      method:'PUT',
+      headers:{'Content-Type':'application/json','X-Master-Key':JKEY},
+      body:JSON.stringify({data:{wa,ical,bloqueos}})
+    });
+  }catch(err){console.log('JSONBin ical save error:',err);}
+}
+
+async function saveBloqueos(bloqueos){
+  sl('cn_bloqueos',bloqueos);
+  const wa=lo('cn_wa',{admin_e:'',mant:''});
+  const ical=lo('cn_ical',{});
+  try{
+    await fetch(JURL+BIN_C,{
+      method:'PUT',
+      headers:{'Content-Type':'application/json','X-Master-Key':JKEY},
+      body:JSON.stringify({data:{wa,ical,bloqueos}})
+    });
+  }catch(err){console.log('JSONBin bloqueos save error:',err);}
 }
 
 async function saveToBin(binId,data){
@@ -750,7 +792,8 @@ function renderCalendario(){
     for(let d=1;d<=dim;d++){
       const ds=`${anio}-${String(mes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
       const res=reservas.find(r=>r.depto===code&&r.estado!=='Cancelada'&&r.checkin<=ds&&r.checkout>ds);
-      h+=res?`<div class="cal-cell occupied" style="background:${DC[code]}" title="${res.huesped}">${res.huesped.split(' ')[0].substr(0,4)}</div>`:`<div class="cal-cell available"></div>`;
+      const bloq=!res&&isBlocked(code,ds);
+      h+=res?`<div class="cal-cell occupied" style="background:${DC[code]}" title="${res.huesped}">${res.huesped.split(' ')[0].substr(0,4)}</div>`:bloq?`<div class="cal-cell occupied" style="background:repeating-linear-gradient(45deg,#e67e22,#e67e22 4px,#f39c12 4px,#f39c12 8px)" title="Bloqueado Airbnb">Air</div>`:`<div class="cal-cell available"></div>`;
     }
   });
   h+='</div>';
@@ -931,6 +974,84 @@ function renderDashboard(){
 }
 
 // ── CONFIG ────────────────────────────────────────────────────────────────
+// ── iCAL ──────────────────────────────────────────────────────────────────
+function renderIcalConfig(){
+  const ical=lo('cn_ical',{});
+  const sec=document.getElementById('ical-config-section');
+  if(!sec)return;
+  sec.innerHTML=DEPTOS.map(code=>`
+    <div style="margin-bottom:12px">
+      <label style="font-size:0.78rem;font-weight:600;color:var(--navy);display:block;margin-bottom:4px">
+        <span style="background:${DC[code]};color:white;padding:2px 8px;border-radius:4px;font-size:0.72rem">${DN[code]}</span>
+      </label>
+      <input type="url" id="ical-${code}" value="${ical[code]||''}" placeholder="https://www.airbnb.com.ar/calendar/ical/..." 
+        style="width:100%;padding:8px 12px;border:1px solid var(--cream2);border-radius:6px;font-size:0.75rem;font-family:inherit">
+    </div>`).join('');
+}
+
+function guardarIcal(){
+  const ical={};
+  DEPTOS.forEach(code=>{
+    const v=document.getElementById('ical-'+code);
+    if(v&&v.value.trim())ical[code]=v.value.trim();
+  });
+  saveIcalConfig(ical);
+  toast('Links iCal guardados ✓');
+}
+
+async function sincronizarIcal(){
+  const ical=lo('cn_ical',{});
+  const deptos=Object.keys(ical).filter(k=>ical[k]);
+  if(!deptos.length){toast('No hay links iCal configurados',false);return;}
+  const status=document.getElementById('ical-status');
+  if(status)status.textContent='Sincronizando...';
+  const bloqueos={};
+  let ok=0,err=0;
+  for(const code of deptos){
+    try{
+      const proxy='https://corsproxy.io/?'+encodeURIComponent(ical[code]);
+      const res=await fetch(proxy);
+      const text=await res.text();
+      bloqueos[code]=parseIcal(text);
+      ok++;
+    }catch(e){err++;console.log('iCal error '+code,e);}
+  }
+  await saveBloqueos(bloqueos);
+  renderCalendario();
+  if(status)status.textContent=`Última sincronización: ${new Date().toLocaleString('es-AR')} · ${ok} OK${err?' · '+err+' error(es)':''}`;
+  toast(ok>0?'Calendarios sincronizados ✓':'Error al sincronizar',ok>0);
+}
+
+function parseIcal(text){
+  const events=[];
+  const lines=text.replace(/\r/g,'').split('\n');
+  let inEvent=false,dtstart='',dtend='',summary='';
+  for(const line of lines){
+    if(line==='BEGIN:VEVENT'){inEvent=true;dtstart='';dtend='';summary='';}
+    else if(line==='END:VEVENT'){
+      if(dtstart&&dtend)events.push({start:icalDate(dtstart),end:icalDate(dtend),summary});
+      inEvent=false;
+    }
+    else if(inEvent){
+      if(line.startsWith('DTSTART'))dtstart=line.split(':').pop().split('T')[0];
+      else if(line.startsWith('DTEND'))dtend=line.split(':').pop().split('T')[0];
+      else if(line.startsWith('SUMMARY'))summary=line.substring(8);
+    }
+  }
+  return events;
+}
+
+function icalDate(s){
+  if(s.length===8)return s.substring(0,4)+'-'+s.substring(4,6)+'-'+s.substring(6,8);
+  return s;
+}
+
+function isBlocked(code,dateStr){
+  const bloqueos=lo('cn_bloqueos',{});
+  const events=bloqueos[code]||[];
+  return events.some(e=>e.start<=dateStr&&e.end>dateStr);
+}
+
 function renderConfig(){
   pins=lo('cn_p',{...DEFAULT_PINS});
   const us=[{k:'admin',n:'Admin (vos)',d:'Acceso total'},{k:'dueno',n:'Propietario',d:'Solo lectura'},{k:'admin_e',n:'Admin Edificio',d:'Ocupación + avisos'},{k:'mant',n:'Mantenimiento',d:'Avisos hoy y mañana'}];
@@ -943,6 +1064,7 @@ function renderConfig(){
       </div>
     </div>`).join('');
   const wa=lo('cn_wa',{admin_e:'',mant:''});
+  renderIcalConfig();
   document.getElementById('wa-config-section').innerHTML=`
     <div style="margin-top:28px;border-top:2px solid var(--cream2);padding-top:24px;">
       <div style="font-family:'DM Serif Display',serif;font-size:1rem;color:var(--navy);margin-bottom:6px;">📱 WhatsApp para Avisos</div>
