@@ -301,7 +301,7 @@ tbody td{padding:11px 14px;color:var(--text);white-space:nowrap;}
                 <option value="D01">PB5</option><option value="D02">1A</option>
                 <option value="D03">2C</option><option value="D04">2D</option>
                 <option value="D05">PR1</option><option value="D06">PR2</option>
-                <option value="D07">A</option>
+                <option value="D07">1B</option>
               </select>
             </div>
             <div class="form-group"><label>Huésped</label><input type="text" id="r-huesped" placeholder="Nombre completo"></div>
@@ -341,7 +341,7 @@ tbody td{padding:11px 14px;color:var(--text);white-space:nowrap;}
           <select id="fil-depto" onchange="renderReservas()">
             <option value="">Todos</option>
             <option value="D01">PB5</option><option value="D02">1A</option><option value="D03">2C</option>
-            <option value="D04">2D</option><option value="D05">PR1</option><option value="D06">PR2</option><option value="D07">A</option>
+            <option value="D04">2D</option><option value="D05">PR1</option><option value="D06">PR2</option><option value="D07">1B</option>
           </select>
           <label>Estado:</label>
           <select id="fil-estado" onchange="renderReservas()"><option value="">Todos</option><option value="Confirmada">Confirmada</option><option value="Pendiente">Pendiente</option><option value="Cancelada">Cancelada</option><option value="Cortesía">Cortesía</option></select>
@@ -387,7 +387,7 @@ tbody td{padding:11px 14px;color:var(--text);white-space:nowrap;}
               <select id="g-depto">
                 <option value="General">General</option>
                 <option value="D01">PB5</option><option value="D02">1A</option><option value="D03">2C</option>
-                <option value="D04">2D</option><option value="D05">PR1</option><option value="D06">PR2</option><option value="D07">A</option>
+                <option value="D04">2D</option><option value="D05">PR1</option><option value="D06">PR2</option><option value="D07">1B</option>
               </select>
             </div>
             <div class="form-group"><label>Categoría</label>
@@ -483,7 +483,7 @@ tbody td{padding:11px 14px;color:var(--text);white-space:nowrap;}
           <select id="e-depto">
             <option value="D01">PB5</option><option value="D02">1A</option>
             <option value="D03">2C</option><option value="D04">2D</option>
-            <option value="D05">PR1</option><option value="D06">PR2</option><option value="D07">A</option>
+            <option value="D05">PR1</option><option value="D06">PR2</option><option value="D07">1B</option>
           </select>
         </div>
         <div class="form-group"><label>Huésped</label><input type="text" id="e-huesped"></div>
@@ -541,7 +541,7 @@ const MOBILE_NAV={
   mant:['avisos']
 };
 const DC={D01:'#2E75B6',D02:'#375623',D03:'#C55A11',D04:'#7030A0',D05:'#C00000',D06:'#1F3864',D07:'#833C00'};
-const DN={D01:'PB5',D02:'1A',D03:'2C',D04:'2D',D05:'PR1',D06:'PR2',D07:'A'};
+const DN={D01:'PB5',D02:'1A',D03:'2C',D04:'2D',D05:'PR1',D06:'PR2',D07:'1B'};
 const DEPTOS=['D01','D02','D03','D04','D05','D06','D07'];
 
 // ── DATA ──────────────────────────────────────────────────────────────────
@@ -1009,7 +1009,7 @@ async function sincronizarIcal(){
   let ok=0,err=0;
   for(const code of deptos){
     try{
-      const proxy='https://corsproxy.io/?'+encodeURIComponent(ical[code]);
+      const proxy='https://api.allorigins.win/raw?url='+encodeURIComponent(ical[code]);
       const res=await fetch(proxy);
       const text=await res.text();
       bloqueos[code]=parseIcal(text);
