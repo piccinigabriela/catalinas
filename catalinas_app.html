@@ -1021,7 +1021,7 @@ async function sincronizarIcal(){
   // Arrancar con los bloqueos existentes para no perder los que ya funcionaron
   const bloqueos=lo('cn_bloqueos',{});
   let ok=0,err=0;
-  const proxies=['https://api.codetabs.com/v1/proxy?quest=','https://thingproxy.freeboard.io/fetch/','https://api.allorigins.win/raw?url='];
+  const proxies=['https://icalproxy.huuventa.workers.dev/?url='];
   for(const code of deptos){
     let exito=false;
     for(const proxyBase of proxies){
