@@ -1018,21 +1018,24 @@ async function sincronizarIcal(){
   if(!deptos.length){toast('No hay links iCal configurados',false);return;}
   const status=document.getElementById('ical-status');
   if(status)status.textContent='Sincronizando...';
-  const bloqueos={};
+  // Arrancar con los bloqueos existentes para no perder los que ya funcionaron
+  const bloqueos=lo('cn_bloqueos',{});
   let ok=0,err=0;
+  const proxies=['https://corsproxy.io/?','https://api.allorigins.win/raw?url='];
   for(const code of deptos){
-    try{
-      const proxy='https://corsproxy.io/?'+encodeURIComponent(ical[code]);
-      const res=await fetch(proxy);
-      const text=await res.text();
-      if(!text||!text.includes('BEGIN:VCALENDAR')){
-        console.warn('iCal '+code+': respuesta inválida',text.substring(0,100));
-        err++;continue;
-      }
-      bloqueos[code]=parseIcal(text);
-      console.log('iCal '+code+': '+bloqueos[code].length+' eventos');
-      ok++;
-    }catch(e){err++;console.log('iCal error '+code,e);}
+    let exito=false;
+    for(const proxyBase of proxies){
+      try{
+        const url=proxyBase+encodeURIComponent(ical[code]);
+        const res=await fetch(url);
+        const text=await res.text();
+        if(!text||!text.includes('BEGIN:VCALENDAR')){continue;}
+        bloqueos[code]=parseIcal(text);
+        console.log('iCal '+code+': '+bloqueos[code].length+' eventos (via '+proxyBase+')');
+        ok++;exito=true;break;
+      }catch(e){console.log('iCal error '+code+' via '+proxyBase,e);}
+    }
+    if(!exito){err++;console.warn('iCal '+code+': falló con todos los proxies, conservando bloqueos anteriores');}
   }
   await saveBloqueos(bloqueos);
   renderCalendario();
