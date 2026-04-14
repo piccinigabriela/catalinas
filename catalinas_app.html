@@ -671,6 +671,8 @@ async function loginOk(){
   ol.remove();
   buildBottomNav();
   showScreen(NAV_CONFIG[cu][0]);
+  // Auto-sync iCal en background sin bloquear la UI
+  if(cu==='admin'){setTimeout(()=>sincronizarIcal(),2000);}
 }
 function logout(){cu=null;pb='';document.getElementById('app').style.display='none';document.getElementById('login-screen').style.display='flex';ud();}
 
