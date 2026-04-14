@@ -1025,7 +1025,12 @@ async function sincronizarIcal(){
       const proxy='https://api.allorigins.win/raw?url='+encodeURIComponent(ical[code]);
       const res=await fetch(proxy);
       const text=await res.text();
+      if(!text||!text.includes('BEGIN:VCALENDAR')){
+        console.warn('iCal '+code+': respuesta inválida',text.substring(0,100));
+        err++;continue;
+      }
       bloqueos[code]=parseIcal(text);
+      console.log('iCal '+code+': '+bloqueos[code].length+' eventos');
       ok++;
     }catch(e){err++;console.log('iCal error '+code,e);}
   }
@@ -1037,7 +1042,10 @@ async function sincronizarIcal(){
 
 function parseIcal(text){
   const events=[];
-  const lines=text.replace(/\r/g,'').split('\n');
+  if(!text||!text.includes('BEGIN:VCALENDAR'))return events;
+  // Unfold lines (iCal permite continuación con espacio/tab al inicio)
+  const unfolded=text.replace(/\r\n[ \t]/g,'').replace(/\r/g,'');
+  const lines=unfolded.split('\n');
   let inEvent=false,dtstart='',dtend='',summary='';
   for(const line of lines){
     if(line==='BEGIN:VEVENT'){inEvent=true;dtstart='';dtend='';summary='';}
@@ -1046,9 +1054,12 @@ function parseIcal(text){
       inEvent=false;
     }
     else if(inEvent){
-      if(line.startsWith('DTSTART'))dtstart=line.split(':').pop().split('T')[0];
-      else if(line.startsWith('DTEND'))dtend=line.split(':').pop().split('T')[0];
-      else if(line.startsWith('SUMMARY'))summary=line.substring(8);
+      // Soporta tanto DTSTART:VALUE como DTSTART;VALUE=DATE:VALUE
+      const propName=line.split(/[:;]/)[0];
+      const propVal=line.includes(':')? line.substring(line.indexOf(':')+1).split('T')[0] : '';
+      if(propName==='DTSTART')dtstart=propVal;
+      else if(propName==='DTEND')dtend=propVal;
+      else if(propName==='SUMMARY')summary=line.substring(line.indexOf(':')+1);
     }
   }
   return events;
