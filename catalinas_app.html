@@ -349,7 +349,7 @@ tbody td{padding:11px 14px;color:var(--text);white-space:nowrap;}
         </div>
         <div class="card" style="padding:0;overflow:hidden;">
           <div class="table-wrap"><table>
-            <thead><tr><th>#</th><th>Depto</th><th>Huésped</th><th>Check-in</th><th>Check-out</th><th>Noches</th><th>USD/N</th><th>Subtotal</th><th>Airbnb</th><th>Neto</th><th>Gestión</th><th>Líquido</th><th>Estado</th><th></th></tr></thead>
+            <thead><tr><th>#</th><th>Depto</th><th>Huésped</th><th>Check-in</th><th>Check-out</th><th>Noches</th><th>USD/N</th><th>Subtotal</th><th>Airbnb</th><th>Neto</th><th>Gestión</th><th>Líquido</th><th>Estado</th><th>Seña</th><th>Saldo</th><th></th></tr></thead>
             <tbody id="tabla-reservas"></tbody>
           </table></div>
         </div>
@@ -498,6 +498,14 @@ tbody td{padding:11px 14px;color:var(--text);white-space:nowrap;}
           <select id="e-plataforma"><option value="Airbnb">Airbnb</option><option value="Directo">Directo</option><option value="Booking">Booking</option><option value="Otro">Otro</option></select>
         </div>
         <div class="form-group full"><label>Notas</label><textarea id="e-notas"></textarea></div>
+        <div class="form-group full" style="border-top:2px solid var(--cream2);padding-top:16px;margin-top:4px;">
+          <div style="font-size:0.78rem;font-weight:600;color:var(--text-soft);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;">💳 Pagos</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div class="form-group"><label>Seña (USD)</label><input type="number" id="e-senia" placeholder="0"></div>
+            <div class="form-group"><label>Saldo abonado (USD)</label><input type="number" id="e-saldo" placeholder="0"></div>
+          </div>
+          <div id="e-pago-resumen" style="margin-top:12px;font-size:0.82rem;color:var(--text-soft);"></div>
+        </div>
       </div>
       <div class="btn-row">
         <button class="btn btn-outline" onclick="closeEdit()">Cancelar</button>
@@ -750,7 +758,7 @@ function guardarReserva(){
   if(!dep||!hue||!ci||!co||isNaN(pre)){toast('Completá todos los campos obligatorios',false);return;}
   if(new Date(co)<=new Date(ci)){toast('Check-out debe ser posterior al check-in',false);return;}
   const conf=reservas.find(r=>r.depto===dep&&r.estado!=='Cancelada'&&!(co<=r.checkin||ci>=r.checkout));
-  if(conf){toast(`Superposición con ${conf.huesped} en ${DN[dep]}`,false);return;}
+  if(conf&&!(ci===conf.checkout||co===conf.checkin)){toast(`Superposición con ${conf.huesped} en ${DN[dep]}`,false);return;}
   reservas.push({id:uid(),depto:dep,huesped:hue,nac:document.getElementById('r-nac').value.trim(),checkin:ci,checkout:co,precio:pre,plataforma:document.getElementById('r-plataforma').value,estado:document.getElementById('r-estado').value,notas:document.getElementById('r-notas').value.trim(),creado:new Date().toISOString()});
   saveToSheets('reservas',reservas);clearReservaForm();toast('Reserva guardada ✓');
 }
@@ -770,6 +778,9 @@ function renderReservas(){
     <td style="color:var(--red)">${fmt(c.air)}</td><td>${fmt(c.net)}</td>
     <td style="color:#8a6d00">${fmt(c.ges)}</td><td style="font-weight:700;color:var(--green)">${fmt(c.liq)}</td>
     <td><span class="badge ${b}">${r.estado}</span></td>
+    <td style="font-weight:600;color:var(--green)">${r.senia?fmt(r.senia):'—'}</td>
+    <td style="font-weight:600;color:${r.saldo?(Math.max(0,c.sub-(r.senia||0)-(r.saldo||0))<0.01?'var(--green)':'var(--red)'):'var(--text-soft)'}">
+      ${r.saldo?fmt(r.saldo)+(Math.max(0,c.sub-(r.senia||0)-(r.saldo||0))<0.01?' ✓':''):'—'}</td>
     <td>${ia?`<div style="display:flex;gap:6px"><button class="btn btn-outline btn-sm" onclick="editRes('${r.id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="delRes('${r.id}')">✕</button></div>`:''}</td></tr>`;
   }).join('');
 }
@@ -954,14 +965,16 @@ function renderDashboard(){
   const today=new Date().toISOString().split('T')[0];
   const act=reservas.filter(r=>r.estado!=='Cancelada'&&r.checkin<=today&&r.checkout>today);
   const m=new Date().getMonth(),y=new Date().getFullYear();
-  const em=reservas.filter(r=>{const d=new Date(r.checkin);return r.estado!=='Cancelada'&&d.getMonth()===m&&d.getFullYear()===y;});
+  const em=reservas.filter(r=>{const d=new Date(r.checkin);return r.estado!=='Cancelada'&&r.estado!=='Cortesía'&&d.getMonth()===m&&d.getFullYear()===y;});
   const ing=em.reduce((s,r)=>s+calc(r).liq,0);
+  const nochesM=em.reduce((s,r)=>s+calc(r).n,0);
+  const promNoches=em.length?Math.round(nochesM/em.length*10)/10:0;
   const in7=new Date();in7.setDate(in7.getDate()+7);
   const pr=reservas.filter(r=>r.estado!=='Cancelada'&&r.checkin>=today&&r.checkin<=in7.toISOString().split('T')[0]);
   document.getElementById('stats-grid').innerHTML=`
     <div class="stat-card"><div class="stat-label">Ocupados Hoy</div><div class="stat-value">${act.length}<span style="font-size:1rem;color:var(--text-soft)">/7</span></div><div class="stat-sub">Deptos activos</div></div>
-    <div class="stat-card"><div class="stat-label">Ingresos Mes</div><div class="stat-value" style="font-size:1.3rem">${fmt(ing)}</div><div class="stat-sub">Líquido prop.</div></div>
-    <div class="stat-card"><div class="stat-label">Reservas Mes</div><div class="stat-value">${em.length}</div><div class="stat-sub">Activas</div></div>
+    <div class="stat-card"><div class="stat-label">Ingresos Mes</div><div class="stat-value" style="font-size:1.3rem">${fmt(ing)}</div><div class="stat-sub">Líquido prop. mes actual</div></div>
+    <div class="stat-card"><div class="stat-label">Noches Mes</div><div class="stat-value">${nochesM}<span style="font-size:0.9rem;color:var(--text-soft);margin-left:6px">~${promNoches}x res.</span></div><div class="stat-sub">Vendidas · prom. por reserva</div></div>
     <div class="stat-card"><div class="stat-label">Check-ins 7d</div><div class="stat-value">${pr.length}</div><div class="stat-sub">Próximas llegadas</div></div>`;
   const ps=[...pr].sort((a,b)=>a.checkin.localeCompare(b.checkin)).slice(0,5);
   document.getElementById('proximos-checkins').innerHTML=ps.length
@@ -1121,6 +1134,16 @@ function editRes(id){
   document.getElementById('e-precio').value=r.precio;
   document.getElementById('e-plataforma').value=r.plataforma;
   document.getElementById('e-notas').value=r.notas||'';
+  document.getElementById('e-senia').value=r.senia||'';
+  document.getElementById('e-saldo').value=r.saldo||'';
+  const actualizarResumenPago=()=>{
+    const c=calc(r);const senia=parseFloat(document.getElementById('e-senia').value)||0;const saldo=parseFloat(document.getElementById('e-saldo').value)||0;
+    const total=c.sub;const pend=Math.max(0,total-senia-saldo);
+    document.getElementById('e-pago-resumen').innerHTML=`Total: <b>${fmt(total)}</b> · Seña: <b>${fmt(senia)}</b> · Saldo abonado: <b>${fmt(saldo)}</b> · <span style="color:${pend>0?'var(--red)':'var(--green)'}">Pendiente: <b>${fmt(pend)}</b></span>`;
+  };
+  document.getElementById('e-senia').oninput=actualizarResumenPago;
+  document.getElementById('e-saldo').oninput=actualizarResumenPago;
+  actualizarResumenPago();
   const m=document.getElementById('edit-modal');
   m.style.display='flex';
 }
@@ -1137,10 +1160,10 @@ function saveEdit(){
   if(!hue||!ci||!co||isNaN(pre)){toast('Completá todos los campos',false);return;}
   if(new Date(co)<=new Date(ci)){toast('Check-out debe ser posterior al check-in',false);return;}
   const conf=reservas.find(r=>r.id!==editingId&&r.depto===dep&&r.estado!=='Cancelada'&&!(co<=r.checkin||ci>=r.checkout));
-  if(conf){toast('Superposición con '+conf.huesped+' en '+DN[dep],false);return;}
+  if(conf&&!(ci===conf.checkout||co===conf.checkin)){toast('Superposición con '+conf.huesped+' en '+DN[dep],false);return;}
   reservas=reservas.map(r=>{
     if(r.id!==editingId)return r;
-    return{...r,depto:dep,huesped:hue,nac:document.getElementById('e-nac').value.trim(),checkin:ci,checkout:co,precio:pre,plataforma:document.getElementById('e-plataforma').value,estado:document.getElementById('e-estado').value,notas:document.getElementById('e-notas').value.trim()};
+    return{...r,depto:dep,huesped:hue,nac:document.getElementById('e-nac').value.trim(),checkin:ci,checkout:co,precio:pre,plataforma:document.getElementById('e-plataforma').value,estado:document.getElementById('e-estado').value,notas:document.getElementById('e-notas').value.trim(),senia:parseFloat(document.getElementById('e-senia').value)||0,saldo:parseFloat(document.getElementById('e-saldo').value)||0};
   });
   saveToSheets('reservas',reservas);
   closeEdit();
