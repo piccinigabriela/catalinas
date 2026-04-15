@@ -143,7 +143,8 @@ tbody td{padding:11px 14px;color:var(--text);white-space:nowrap;}
 .cal-scroll{overflow-x:auto;}
 .cal-grid{display:grid;gap:2px;font-size:0.72rem;min-width:700px;}
 .cal-header{background:var(--navy);color:var(--white);padding:8px 4px;text-align:center;font-weight:700;border-radius:4px;}
-.cal-depto{color:var(--white);padding:8px 10px;font-weight:700;border-radius:4px;display:flex;align-items:center;font-size:0.75rem;}
+.cal-depto{color:var(--white);padding:8px 10px;font-weight:700;border-radius:4px;display:flex;align-items:center;font-size:0.75rem;position:sticky;left:0;z-index:2;}
+.cal-header-depto{position:sticky;left:0;z-index:3;background:var(--navy);}
 .cal-cell{background:var(--cream);min-height:34px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:600;text-align:center;padding:2px;}
 .cal-cell.occupied{color:white;}
 .cal-cell.available{background:#e8f5ef;color:#1e7e5a;}
@@ -738,7 +739,15 @@ const nights=(ci,co)=>Math.max(0,Math.round((new Date(co)-new Date(ci))/86400000
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).substr(2,4);
 function calc(r){const n=nights(r.checkin,r.checkout);const sub=n*r.precio;const air=r.plataforma==='Airbnb'?sub*0.03:0;const net=sub-air;const ges=net*0.12;return{n,sub,air,net,ges,liq:net-ges};}
 function toast(msg,ok=true){const t=document.getElementById('toast');document.getElementById('toast-msg').textContent=msg;document.getElementById('toast-icon').textContent=ok?'✓':'⚠';t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
-function csvDown(rows,filename){const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(rows.join('\n'));a.download=filename;a.click();}
+function csvDown(rows,filename){
+  // sep=; para Excel en español + BOM UTF-8 para acentos
+  const content='sep=;\n'+rows.join('\n');
+  const bom='\uFEFF';
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(bom+content);
+  a.download=filename;a.click();
+}
+function csvRow(arr){return arr.map(v=>typeof v==='string'&&(v.includes(';')||v.includes('"'))?'"'+v.replace(/"/g,'""')+'"':v).join(';');}
 
 // ── NUEVA RESERVA ─────────────────────────────────────────────────────────
 function calcNights(){
@@ -788,9 +797,9 @@ function renderReservas(){
 }
 function delRes(id){if(cu!=='admin')return;if(!confirm('¿Eliminar reserva?'))return;reservas=reservas.filter(r=>r.id!==id);saveToSheets('reservas',reservas);renderReservas();toast('Reserva eliminada');}
 function exportReservas(){
-  const h=['Depto','Huésped','Nacionalidad','Check-in','Check-out','Noches','USD/Noche','Subtotal','Com.Airbnb','Neto','Com.Gestión','Líquido','Estado','Plataforma','Notas'];
-  const rows=reservas.map(r=>{const c=calc(r);return[DN[r.depto],r.huesped,r.nac,r.checkin,r.checkout,c.n,r.precio,c.sub.toFixed(2),c.air.toFixed(2),c.net.toFixed(2),c.ges.toFixed(2),c.liq.toFixed(2),r.estado,r.plataforma,r.notas].join(',');});
-  csvDown([h.join(','),...rows],'reservas_catalinas.csv');
+  const h=['Depto','Huésped','Nacionalidad','Check-in','Check-out','Noches','USD/Noche','Subtotal','Com.Airbnb','Neto','Com.Gestión','Líquido','Estado','Plataforma','Notas','Seña','Saldo'];
+  const rows=reservas.map(r=>{const c=calc(r);return csvRow([DN[r.depto],r.huesped,r.nac||'',r.checkin,r.checkout,c.n,r.precio,c.sub.toFixed(2),c.air.toFixed(2),c.net.toFixed(2),c.ges.toFixed(2),c.liq.toFixed(2),r.estado,r.plataforma,r.notas||'',r.senia||0,r.saldo||0]);});
+  csvDown([csvRow(h),...rows],'reservas_catalinas.csv');
 }
 
 // ── OCUPACIÓN ─────────────────────────────────────────────────────────────
@@ -798,7 +807,7 @@ function renderCalendario(){
   const mes=parseInt(document.getElementById('cal-mes').value),anio=parseInt(document.getElementById('cal-anio').value);
   const dim=new Date(anio,mes+1,0).getDate();
   let h=`<div class="cal-grid" style="grid-template-columns:70px repeat(${dim},1fr)">`;
-  h+=`<div class="cal-header">Depto</div>`;
+  h+=`<div class="cal-header cal-header-depto">Depto</div>`;
   for(let d=1;d<=dim;d++){const dow=new Date(anio,mes,d).getDay();h+=`<div class="cal-header" style="${dow===0||dow===6?'background:#2a4a7a':''}">${d}</div>`;}
   DEPTOS.forEach(code=>{
     h+=`<div class="cal-depto" style="background:${DC[code]}">${DN[code]}</div>`;
@@ -825,9 +834,9 @@ function exportOcupacion(){
       const res=reservas.find(r=>r.depto===code&&r.estado!=='Cancelada'&&r.checkin<=ds&&r.checkout>ds);
       return res?res.huesped.split(' ')[0]:'';
     });
-    return[DN[code],...cells].join(',');
+    return csvRow([DN[code],...cells]);
   });
-  csvDown([`Ocupación ${meses[mes]} ${anio}`,header.join(','),...rows],`ocupacion_${meses[mes]}_${anio}.csv`);
+  csvDown([`Ocupación ${meses[mes]} ${anio}`,csvRow(header),...rows],`ocupacion_${meses[mes]}_${anio}.csv`);
 }
 
 // ── GASTOS ────────────────────────────────────────────────────────────────
@@ -860,8 +869,8 @@ function guardarGasto(){
 function delGas(id){if(cu!=='admin')return;if(!confirm('¿Eliminar?'))return;gastos=gastos.filter(g=>g.id!==id);saveToSheets('gastos',gastos);renderGastos();toast('Eliminado');}
 function exportGastos(){
   const h=['Fecha','Depto','Categoría','Descripción','Monto USD','Comprobante'];
-  const rows=gastos.map(g=>[g.fecha,g.depto==='General'?'General':(DN[g.depto]||g.depto),g.categoria,g.descripcion,g.monto.toFixed(2),g.comprobante].join(','));
-  csvDown([h.join(','),...rows],'gastos_catalinas.csv');
+  const rows=gastos.map(g=>csvRow([g.fecha,g.depto==='General'?'General':(DN[g.depto]||g.depto),g.categoria,g.descripcion,g.monto.toFixed(2),g.comprobante||'']));
+  csvDown([csvRow(h),...rows],'gastos_catalinas.csv');
 }
 
 // ── RENDIMIENTO ───────────────────────────────────────────────────────────
@@ -908,9 +917,9 @@ function exportRendimiento(){
   const rows=DEPTOS.map(code=>{
     const dr=fil.filter(r=>r.depto===code);let s=0,a=0,n=0,g=0,l=0,no=0;
     dr.forEach(r=>{const c=calc(r);s+=c.sub;a+=c.air;n+=c.net;g+=c.ges;l+=c.liq;no+=c.n;});
-    return[DN[code],dr.length,no,s.toFixed(2),a.toFixed(2),n.toFixed(2),g.toFixed(2),l.toFixed(2),dr.length?(s/dr.length).toFixed(2):'0'].join(',');
+    return csvRow([DN[code],dr.length,no,s.toFixed(2),a.toFixed(2),n.toFixed(2),g.toFixed(2),l.toFixed(2),dr.length?(s/dr.length).toFixed(2):'0']);
   });
-  csvDown([h.join(','),...rows],'rendimiento_catalinas.csv');
+  csvDown([csvRow(h),...rows],'rendimiento_catalinas.csv');
 }
 
 // ── AVISOS ────────────────────────────────────────────────────────────────
