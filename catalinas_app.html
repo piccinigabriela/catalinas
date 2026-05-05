@@ -235,6 +235,7 @@ tbody td:last-child{padding-right:22px;}
 ::-webkit-scrollbar-thumb:hover{background:var(--muted-2);}
 
 .dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.dash-grid.hoy-cols-3{grid-template-columns:1fr 1fr 1fr;}
 .dash-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);gap:12px;}
 .dash-item:last-child{border-bottom:none;}
 .dash-item-left{display:flex;align-items:center;gap:10px;min-width:0;}
@@ -282,6 +283,7 @@ tbody td:last-child{padding-right:22px;}
   .btn-row{justify-content:stretch;}
   .btn-row .btn{flex:1;justify-content:center;}
   .dash-grid{grid-template-columns:1fr;}
+  .dash-grid.hoy-cols-3{grid-template-columns:1fr;}
   .login-box{padding:32px 24px;}
   .toast{bottom:calc(var(--bn) + 12px);right:14px;left:14px;font-size:0.82rem;max-width:none;}
   thead th:first-child,tbody td:first-child{padding-left:16px;}
@@ -340,7 +342,6 @@ tbody td:last-child{padding-right:22px;}
       <button class="pin-btn clear" type="button" data-pin="clear"><svg width="14" height="14"><use href="#i-close"/></svg></button><button class="pin-btn" type="button" data-pin="0">0</button><button class="pin-btn enter" type="button" data-pin="enter"><svg width="14" height="14"><use href="#i-check"/></svg></button>
     </div>
     <div class="login-error" id="login-error"></div>
-    <div class="login-hint">PINs por defecto:<br>Admin: <b>1234</b> · Dueño: <b>2345</b> · Admin edif: <b>3456</b> · Mant: <b>4567</b></div>
   </div>
 </div>
 
@@ -375,18 +376,21 @@ tbody td:last-child{padding-right:22px;}
     <div class="content">
 
       <div class="screen" id="screen-dashboard">
-        <div class="section-title">Dashboard</div>
-        <div class="section-sub">Resumen de los 7 departamentos</div>
+        <div class="section-title">Hoy</div>
+        <div class="section-sub" id="hoy-sub">Resumen del día y próximos movimientos</div>
         <div class="stats-grid" id="stats-grid"></div>
+        <div class="dash-grid hoy-cols-3" id="hoy-cols"></div>
+        <div style="height:8px"></div>
         <div class="dash-grid">
-          <div class="card"><div class="card-title"><div class="dot"></div>Próximos Check-ins</div><div id="proximos-checkins"></div></div>
+          <div class="card"><div class="card-title"><div class="dot"></div>Próximos Check-ins (7 días)</div><div id="proximos-checkins"></div></div>
           <div class="card"><div class="card-title"><div class="dot"></div>Últimas Reservas</div><div id="ultimas-reservas"></div></div>
         </div>
       </div>
 
       <div class="screen" id="screen-nueva-reserva">
         <div class="section-title">Nueva Reserva</div>
-        <div class="section-sub">Completá los datos de la reserva</div>
+        <div class="section-sub">Completá los datos o pegá una notificación de Airbnb</div>
+        <div style="margin-bottom:16px"><button class="btn btn-accent" onclick="openSmartPaste()"><svg><use href="#i-list"/></svg>Pegar de Airbnb</button></div>
         <div class="card">
           <div class="card-title"><div class="dot"></div>Datos</div>
           <div class="form-grid">
@@ -525,7 +529,17 @@ tbody td:last-child{padding-right:22px;}
 
       <div class="screen" id="screen-config">
         <div class="section-title">Configuración</div>
-        <div class="section-sub">PINs y contactos de WhatsApp</div>
+        <div class="section-sub">PINs, WhatsApp y backup</div>
+        <div class="card">
+          <div class="card-title"><div class="dot"></div>Backup Local</div>
+          <p style="font-size:0.82rem;color:var(--muted);margin-bottom:14px;line-height:1.6">Tus datos ya se guardan automáticamente en la nube (JSONBin). Esto es un backup adicional en tu compu/celular, por si acaso.</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="downloadBackup()"><svg><use href="#i-download"/></svg>Descargar Backup</button>
+            <input type="file" id="backup-file" accept=".json" style="display:none" onchange="restoreBackup(this.files[0])">
+            <button class="btn btn-outline" onclick="document.getElementById('backup-file').click()"><svg><use href="#i-sync"/></svg>Restaurar Backup</button>
+          </div>
+          <div id="backup-status" style="margin-top:12px;font-size:0.78rem;color:var(--muted)"></div>
+        </div>
         <div class="card">
           <div class="card-title"><div class="dot"></div>PINs de Acceso</div>
           <div class="pin-settings-grid" id="pin-settings-grid"></div>
@@ -585,6 +599,19 @@ tbody td:last-child{padding-right:22px;}
   </div>
 </div>
 
+<div class="modal-backdrop" id="sp-modal">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-title">Pegar notificación de Airbnb</div>
+    <p style="font-size:0.82rem;color:var(--muted);margin-bottom:12px;line-height:1.6">Pegá el texto de la notificación de Airbnb. Detecto automáticamente nombre, fechas, depto. Solo cargás el USD/noche.</p>
+    <textarea id="sp-input" placeholder="Pegá acá el texto completo de la notificación de Airbnb..." style="min-height:120px;font-size:0.82rem"></textarea>
+    <div class="btn-row" style="margin-top:14px">
+      <button class="btn btn-outline" onclick="closeSmartPaste()">Cancelar</button>
+      <button class="btn btn-primary" onclick="smartPasteDetect()">Detectar Datos</button>
+    </div>
+    <div id="sp-detected"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"><svg id="toast-icon"><use href="#i-check"/></svg><span id="toast-msg"></span></div>
 
 <script>
@@ -603,7 +630,7 @@ const NAV_CONFIG={
   mant:['avisos']
 };
 const NAV_META={
-  'dashboard':{icon:'i-dashboard',label:'Dashboard',sec:'Principal'},
+  'dashboard':{icon:'i-dashboard',label:'Hoy',sec:'Principal'},
   'nueva-reserva':{icon:'i-plus',label:'Nueva Reserva',sec:'Operaciones'},
   'reservas':{icon:'i-list',label:'Reservas',sec:'Operaciones'},
   'ocupacion':{icon:'i-calendar',label:'Ocupación',sec:'Operaciones'},
@@ -613,14 +640,14 @@ const NAV_META={
   'config':{icon:'i-settings',label:'Config.',sec:'Sistema'}
 };
 const MOBILE_NAV={
-  admin:['nueva-reserva','reservas','ocupacion','rendimiento','avisos'],
+  admin:['dashboard','nueva-reserva','ocupacion','avisos','reservas'],
   dueno:['ocupacion','gastos','rendimiento'],
   admin_e:['ocupacion','avisos'],
   mant:['avisos']
 };
 const DC={D01:'#2e5d8a',D02:'#3e5b2a',D03:'#a85828',D04:'#5d3d7a',D05:'#9a3a2e',D06:'#24324f',D07:'#6e3a18'};
 const DN={D01:'PB5',D02:'1A',D03:'2C',D04:'2D',D05:'PR1',D06:'PR2',D07:'1B'};
-const DEPTOS=['D01','D02','D03','D04','D05','D06','D07'];
+const DEPTOS=['D02','D07','D03','D04','D05','D06','D01'];
 
 // ── CLOUD ──
 const BIN_R='69a97dbcd0ea881f40f19cbb';
@@ -716,6 +743,7 @@ async function loginOk(){
   buildBottomNav();
   showScreen(NAV_CONFIG[cu][0]);
   if(cu==='admin'){setTimeout(()=>sincronizarIcal(),2000);}
+  checkBackupReminder();
 }
 function logout(){cu=null;pb='';$('app').style.display='none';$('login-screen').style.display='flex';ud();}
 
@@ -752,7 +780,7 @@ function showScreen(id){
   const nav=$('nav-'+id);if(nav)nav.classList.add('active');
   const bn=$('bn-'+id);if(bn)bn.classList.add('active');
   $('topbar-title').textContent=NAV_META[id]?.label||id;
-  const R={dashboard:renderDashboard,reservas:renderReservas,ocupacion:renderCalendario,gastos:renderGastos,rendimiento:renderRendimiento,avisos:renderAvisos,config:renderConfig};
+  const R={dashboard:renderHoy,reservas:renderReservas,ocupacion:renderCalendario,gastos:renderGastos,rendimiento:renderRendimiento,avisos:renderAvisos,config:renderConfig};
   if(R[id])R[id]();
   window.scrollTo(0,0);
 }
@@ -1191,8 +1219,8 @@ function renderAvisos(){
   }).join('');
 }
 
-// ── DASHBOARD ──
-function renderDashboard(){
+// ── HOY (ex Dashboard) ──
+function renderHoy(){
   const today=new Date().toISOString().split('T')[0];
   const act=reservas.filter(r=>r.estado!=='Cancelada'&&r.checkin<=today&&r.checkout>today);
   const m=new Date().getMonth(),y=new Date().getFullYear();
@@ -1200,13 +1228,25 @@ function renderDashboard(){
   const ing=em.reduce((s,r)=>s+calc(r).liq,0);
   const nochesM=em.reduce((s,r)=>s+calc(r).n,0);
   const promNoches=em.length?Math.round(nochesM/em.length*10)/10:0;
-  const in7=new Date();in7.setDate(in7.getDate()+7);
-  const pr=reservas.filter(r=>r.estado!=='Cancelada'&&r.checkin>=today&&r.checkin<=in7.toISOString().split('T')[0]);
+  const in7=new Date(Date.now()+7*86400000).toISOString().split('T')[0];
+  const pr=reservas.filter(r=>r.estado!=='Cancelada'&&r.checkin>=today&&r.checkin<=in7);
+  const ciHoy=reservas.filter(r=>r.estado!=='Cancelada'&&r.checkin===today).sort((a,b)=>a.depto.localeCompare(b.depto));
+  const coHoy=reservas.filter(r=>r.estado!=='Cancelada'&&r.checkout===today).sort((a,b)=>a.depto.localeCompare(b.depto));
+  const fiveAgo=new Date(Date.now()-5*86400000).toISOString().split('T')[0];
+  const aLimpiar=reservas.filter(r=>r.estado!=='Cancelada'&&!r.limpio&&r.checkout>=fiveAgo&&r.checkout<=today).sort((a,b)=>a.checkout.localeCompare(b.checkout));
   $('stats-grid').innerHTML=`
     <div class="stat-card"><div class="stat-label">Ocupados Hoy</div><div class="stat-value">${act.length}<span style="font-size:1rem;color:var(--muted-2);font-weight:400;margin-left:2px">/7</span></div><div class="stat-sub">Deptos activos</div></div>
     <div class="stat-card"><div class="stat-label">Ingresos Mes</div><div class="stat-value sm">${fmt(ing)}</div><div class="stat-sub">Líquido prop. mes actual</div></div>
     <div class="stat-card"><div class="stat-label">Noches Mes</div><div class="stat-value">${nochesM}<span style="font-size:.85rem;color:var(--muted);margin-left:6px;font-weight:400">~${promNoches}x</span></div><div class="stat-sub">Vendidas · prom. por reserva</div></div>
     <div class="stat-card"><div class="stat-label">Check-ins 7d</div><div class="stat-value">${pr.length}</div><div class="stat-sub">Próximas llegadas</div></div>`;
+  const isAdm=cu==='admin';
+  const colCI=ciHoy.length?ciHoy.map(r=>`<div class="dash-item"><div class="dash-item-left"><span class="depto-tag" style="background:${DC[r.depto]}">${DN[r.depto]}</span><span class="dash-item-name">${esc(r.huesped)}</span></div><button class="btn btn-sm btn-wa" onclick="waMsg('${r.id}','admin_e')" title="Avisar"><svg><use href="#i-wa"/></svg></button></div>`).join(''):`<div class="empty-state" style="padding:18px"><p style="font-size:.82rem">Sin check-ins</p></div>`;
+  const colCO=coHoy.length?coHoy.map(r=>`<div class="dash-item"><div class="dash-item-left"><span class="depto-tag" style="background:${DC[r.depto]}">${DN[r.depto]}</span><span class="dash-item-name">${esc(r.huesped)}</span></div>${isAdm?`<button class="btn btn-sm btn-outline" onclick="toggleLimpio('${r.id}')" style="padding:5px 10px;font-size:.72rem"><svg><use href="#i-check"/></svg>Limpio</button>`:''}</div>`).join(''):`<div class="empty-state" style="padding:18px"><p style="font-size:.82rem">Sin check-outs</p></div>`;
+  const colLimp=aLimpiar.length?aLimpiar.map(r=>`<div class="dash-item"><div class="dash-item-left"><span class="depto-tag" style="background:${DC[r.depto]}">${DN[r.depto]}</span><span class="dash-item-name">${fmtD(r.checkout)} · ${esc(r.huesped.split(' ')[0])}</span></div>${isAdm?`<button class="btn btn-sm btn-primary" onclick="toggleLimpio('${r.id}')" style="padding:5px 10px;font-size:.72rem"><svg><use href="#i-check"/></svg>Limpio</button>`:''}</div>`).join(''):`<div class="empty-state" style="padding:18px"><p style="font-size:.82rem">Todo limpio</p></div>`;
+  $('hoy-cols').innerHTML=`
+    <div class="card"><div class="card-title"><div class="dot" style="background:var(--ok)"></div>Check-ins HOY · ${ciHoy.length}</div>${colCI}</div>
+    <div class="card"><div class="card-title"><div class="dot" style="background:var(--accent)"></div>Check-outs HOY · ${coHoy.length}</div>${colCO}</div>
+    <div class="card"><div class="card-title"><div class="dot" style="background:var(--err)"></div>A Limpiar · ${aLimpiar.length}</div>${colLimp}</div>`;
   const ps=[...pr].sort((a,b)=>a.checkin.localeCompare(b.checkin)).slice(0,5);
   $('proximos-checkins').innerHTML=ps.length
     ?ps.map(r=>`<div class="dash-item"><div class="dash-item-left"><span class="depto-tag" style="background:${DC[r.depto]}">${DN[r.depto]}</span><span class="dash-item-name">${esc(r.huesped)}</span></div><span class="dash-item-meta">${fmtD(r.checkin)}</span></div>`).join('')
@@ -1215,6 +1255,150 @@ function renderDashboard(){
   $('ultimas-reservas').innerHTML=ul.length
     ?ul.map(r=>`<div class="dash-item"><div class="dash-item-left"><span class="depto-tag" style="background:${DC[r.depto]}">${DN[r.depto]}</span><span class="dash-item-name">${esc(r.huesped)}</span></div><span class="badge ${badgeClass(r.estado)}">${r.estado}</span></div>`).join('')
     :`<div class="empty-state" style="padding:24px"><svg><use href="#i-inbox"/></svg><p>Cargá tu primera reserva</p></div>`;
+}
+function toggleLimpio(id){
+  if(cu!=='admin')return;
+  const r=reservas.find(x=>x.id===id);if(!r)return;
+  reservas=reservas.map(x=>x.id===id?{...x,limpio:!x.limpio}:x);
+  saveToSheets('reservas',reservas);
+  if($('screen-dashboard').classList.contains('active'))renderHoy();
+  if($('screen-reservas').classList.contains('active'))renderReservas();
+  toast(r.limpio?'Marcado como sucio':'Marcado como limpio');
+}
+
+// ── SMART PASTE AIRBNB ──
+function openSmartPaste(){$('sp-modal').classList.add('show');$('sp-input').value='';$('sp-detected').innerHTML='';setTimeout(()=>$('sp-input').focus(),100);}
+function closeSmartPaste(){$('sp-modal').classList.remove('show');}
+function smartPasteDetect(){
+  const text=$('sp-input').value;
+  if(!text.trim()){toast('Pegá la notificación primero',false);return;}
+  const months={ene:0,feb:1,mar:2,abr:3,may:4,jun:5,jul:6,ago:7,sep:8,sept:8,oct:9,nov:10,dic:11};
+  const r={plataforma:'Airbnb',estado:'Confirmada'};
+  if(/cancelad/i.test(text))r.estado='Cancelada';
+  else if(/pendiente|en espera/i.test(text))r.estado='Pendiente';
+  const lines=text.split('\n').map(l=>l.trim()).filter(l=>l);
+  const idIdx=lines.findIndex(l=>/identidad verificada/i.test(l));
+  if(idIdx>0)r.huesped=lines[idIdx-1];
+  else{const mt=text.match(/^(.+?)\s+llega el/m);if(mt){r.huesped=mt[1].replace(/^[¡!]?[A-Za-záéíóúñ\s]+!\s*/i,'').trim();}}
+  const propIdx=lines.findIndex(l=>/casa\/apto|casa entera|apartamento entero|departamento entero/i.test(l));
+  if(propIdx>0){let prop=lines[propIdx-1];prop=prop.replace(/\.\s*\d+\s*$/,'').trim();r.property=prop;}
+  function parseDate(label,year){
+    const re=new RegExp(label+'[\\s\\S]{0,80}?(\\d{1,2})\\s+(\\w+)','i');
+    const mt=text.match(re);if(!mt)return null;
+    const day=parseInt(mt[1]);const ms=mt[2].toLowerCase().substring(0,3);const mo=months[ms];
+    if(mo===undefined)return null;
+    return`${year}-${String(mo+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+  }
+  const yr=new Date().getFullYear();
+  r.checkin=parseDate('Llegada',yr);
+  r.checkout=parseDate('Salida',yr);
+  if(r.checkin&&r.checkout&&r.checkout<r.checkin){r.checkout=parseDate('Salida',yr+1);}
+  if(r.checkin){
+    const ago3m=new Date(Date.now()-90*86400000).toISOString().split('T')[0];
+    if(r.checkin<ago3m){r.checkin=parseDate('Llegada',yr+1);r.checkout=parseDate('Salida',yr+1);if(r.checkin&&r.checkout&&r.checkout<r.checkin)r.checkout=parseDate('Salida',yr+2);}
+  }
+  const trav=text.match(/(\d+\s+adultos?(?:[\s,]+\d+\s+(?:niños?|menores?))?)/i);
+  if(trav)r.notas=trav[1];
+  const propMap=lo('cn_propMap',{});
+  if(r.property&&propMap[r.property])r.depto=propMap[r.property];
+  let h='<div style="border-top:1px solid var(--line);margin-top:18px;padding-top:18px"><div style="font-size:0.78rem;color:var(--muted);font-weight:600;margin-bottom:12px;letter-spacing:0.04em;text-transform:uppercase">Datos detectados — completá lo que falte</div>';
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';
+  h+=`<div class="form-group"><label>Huésped</label><input type="text" id="sp-huesped" value="${esc(r.huesped||'')}"></div>`;
+  h+=`<div class="form-group"><label>Estado</label><select id="sp-estado"><option value="Confirmada"${r.estado==='Confirmada'?' selected':''}>Confirmada</option><option value="Pendiente"${r.estado==='Pendiente'?' selected':''}>Pendiente</option><option value="Cancelada"${r.estado==='Cancelada'?' selected':''}>Cancelada</option></select></div>`;
+  h+=`<div class="form-group"><label>Check-in</label><input type="date" id="sp-checkin" value="${r.checkin||''}"></div>`;
+  h+=`<div class="form-group"><label>Check-out</label><input type="date" id="sp-checkout" value="${r.checkout||''}"></div>`;
+  h+=`<div class="form-group"><label>Depto ${r.property?`<span style="color:var(--accent);font-weight:600;text-transform:none;letter-spacing:0">("${esc(r.property)}")</span>`:''}</label><select id="sp-depto"><option value="">— Elegí —</option>${DEPTOS.map(c=>`<option value="${c}"${r.depto===c?' selected':''}>${DN[c]}</option>`).join('')}</select></div>`;
+  h+=`<div class="form-group"><label>USD / Noche</label><input type="number" id="sp-precio" placeholder="120" step="0.01" autofocus></div>`;
+  h+=`<div class="form-group" style="grid-column:1/-1"><label>Notas</label><textarea id="sp-notas" style="min-height:50px">${esc(r.notas||'')}</textarea></div>`;
+  h+='</div>';
+  h+=`<input type="hidden" id="sp-property" value="${esc(r.property||'')}">`;
+  h+=`<div class="btn-row" style="margin-top:18px"><button class="btn btn-outline" onclick="closeSmartPaste()">Cancelar</button><button class="btn btn-primary" onclick="smartPasteSave()">Guardar Reserva</button></div></div>`;
+  $('sp-detected').innerHTML=h;
+  setTimeout(()=>{const p=$('sp-precio');if(p)p.focus();},100);
+  toast('Datos detectados');
+}
+function smartPasteSave(){
+  const dep=$('sp-depto').value,hue=$('sp-huesped').value.trim();
+  const ci=$('sp-checkin').value,co=$('sp-checkout').value;
+  const pre=parseFloat($('sp-precio').value);
+  if(!dep||!hue||!ci||!co||isNaN(pre)){toast('Faltan: depto, huésped, fechas o USD/noche',false);return;}
+  if(new Date(co)<=new Date(ci)){toast('Check-out debe ser posterior al check-in',false);return;}
+  const conf=reservas.find(r=>r.depto===dep&&r.estado!=='Cancelada'&&!(co<=r.checkin||ci>=r.checkout));
+  if(conf&&!(ci===conf.checkout||co===conf.checkin)){toast('Superposición con '+conf.huesped+' en '+DN[dep],false);return;}
+  reservas.push({id:uid(),depto:dep,huesped:hue,nac:'',checkin:ci,checkout:co,precio:pre,plataforma:'Airbnb',estado:$('sp-estado').value,notas:$('sp-notas').value.trim(),creado:new Date().toISOString()});
+  const property=$('sp-property').value;
+  if(property){const pm=lo('cn_propMap',{});pm[property]=dep;sl('cn_propMap',pm);}
+  saveToSheets('reservas',reservas);
+  closeSmartPaste();
+  toast('Reserva guardada');
+  if($('screen-reservas').classList.contains('active'))renderReservas();
+  if($('screen-dashboard').classList.contains('active'))renderHoy();
+}
+
+// ── BACKUP ──
+function downloadBackup(){
+  const data={
+    version:1,fecha:new Date().toISOString(),
+    reservas:reservas,gastos:gastos,
+    pins:lo('cn_p',DEFAULT_PINS),wa:lo('cn_wa',{admin_e:'',mant:''}),
+    ical:lo('cn_ical',{}),bloqueos:lo('cn_bloqueos',{}),propMap:lo('cn_propMap',{})
+  };
+  const json=JSON.stringify(data,null,2);
+  const blob=new Blob([json],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=`backup_catalinas_${new Date().toISOString().split('T')[0]}.json`;a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),100);
+  sl('cn_lastBackup',new Date().toISOString());
+  updateBackupStatus();
+  toast('Backup descargado');
+}
+function restoreBackup(file){
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!data.reservas||!Array.isArray(data.reservas)){toast('Archivo inválido',false);return;}
+      const fecha=data.fecha?new Date(data.fecha).toLocaleString('es-AR'):'?';
+      if(!confirm(`¿Restaurar backup del ${fecha}?\n\n${data.reservas.length} reservas · ${(data.gastos||[]).length} gastos.\n\nReemplazará TODA la data actual (local y nube).`)){$('backup-file').value='';return;}
+      reservas=data.reservas;gastos=data.gastos||[];
+      if(data.pins)sl('cn_p',data.pins);
+      if(data.wa)sl('cn_wa',data.wa);
+      if(data.ical)sl('cn_ical',data.ical);
+      if(data.bloqueos)sl('cn_bloqueos',data.bloqueos);
+      if(data.propMap)sl('cn_propMap',data.propMap);
+      await saveToBin(BIN_R,reservas);
+      await saveToBin(BIN_G,gastos);
+      if(data.wa||data.ical||data.bloqueos)await saveWaConfig(data.wa||lo('cn_wa',{admin_e:'',mant:''}));
+      toast('Backup restaurado');
+      setTimeout(()=>location.reload(),1200);
+    }catch(err){toast('Error al leer el archivo',false);console.error(err);}
+    $('backup-file').value='';
+  };
+  reader.readAsText(file);
+}
+function updateBackupStatus(){
+  const last=lo('cn_lastBackup',null);
+  const el=$('backup-status');if(!el)return;
+  if(!last){el.innerHTML='Nunca descargaste un backup local.';el.style.color='var(--err)';return;}
+  const days=Math.floor((Date.now()-new Date(last))/86400000);
+  el.innerHTML=`Último backup: ${new Date(last).toLocaleDateString('es-AR')} (hace ${days===0?'hoy':days===1?'1 día':days+' días'})`;
+  el.style.color=days>=15?'var(--err)':days>=7?'var(--warn)':'var(--muted)';
+}
+function checkBackupReminder(){
+  if(cu!=='admin')return;
+  const last=lo('cn_lastBackup',null);
+  const days=last?Math.floor((Date.now()-new Date(last))/86400000):999;
+  if(days>=15){
+    setTimeout(()=>{
+      const msg=last?`Hace ${days} días que no descargás backup. ¿Querés bajar uno ahora?`:'No descargaste ningún backup todavía. ¿Querés bajar uno ahora?';
+      if(confirm(msg+'\n\nSe guarda solo en tu dispositivo. La nube ya tiene una copia automática.')){
+        downloadBackup();
+      } else {
+        sl('cn_lastBackup',new Date(Date.now()-7*86400000).toISOString());
+      }
+    },2500);
+  }
 }
 
 // ── CONFIG ──
@@ -1306,6 +1490,7 @@ function renderConfig(){
         <div class="pin-user-card"><h4>Mantenimiento</h4><p>Aviso 24hs antes del check-in</p><input type="tel" id="wa-mant" value="${esc(wa.mant)}" placeholder="5491112345678"></div>
       </div>
     </div>`;
+  updateBackupStatus();
 }
 function tp(k){const i=$('pi-'+k);i.type=i.type==='password'?'text':'password';}
 function guardarConfig(){
@@ -1316,7 +1501,6 @@ function guardarConfig(){
   saveWaConfig({admin_e:$('wa-admin_e').value.trim(),mant:$('wa-mant').value.trim()});
   toast('Configuración guardada');
 }
-
 // ── WHATSAPP ──
 function waMsg(rid,rol){
   const r=reservas.find(x=>x.id===rid);if(!r){toast('Reserva no encontrada',false);return;}
