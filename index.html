@@ -31,7 +31,7 @@ body { font-family: 'Jost', sans-serif; background: var(--cream); color: var(--t
 .lang-btn:hover { color: var(--white); border-color: var(--white); }
 
 /* HERO */
-.hero { min-height: 100vh; background: var(--navy); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 100px 40px 60px; position: relative; overflow: hidden; }
+.hero { min-height: 100vh; background: linear-gradient(rgba(13,27,42,0.55), rgba(13,27,42,0.7)), url('hero.jpg') center/cover no-repeat; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 100px 40px 60px; position: relative; overflow: hidden; }
 .hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 30% 50%, rgba(200,164,90,0.08) 0%, transparent 60%), radial-gradient(ellipse at 70% 80%, rgba(200,164,90,0.05) 0%, transparent 50%); }
 .hero-eyebrow { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold); margin-bottom: 24px; position: relative; display: flex; align-items: center; gap: 16px; }
 .hero-eyebrow::before, .hero-eyebrow::after { content: ''; width: 40px; height: 1px; background: var(--gold); opacity: 0.5; }
