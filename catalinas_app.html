@@ -1464,7 +1464,7 @@ function parseIcal(text){
         // Filtrar eventos pasados, bloqueos automáticos y eventos de un solo día
         const esBloqueoAuto=summary.toLowerCase().includes('not available')||summary.toLowerCase().includes('no disponible')||summary.toLowerCase().includes('bloqueado');
         const esUnDia=s===e||(new Date(e)-new Date(s))<=86400000;
-        const esPasado=s<hoy;
+        const esPasado=s<=hoy;
         if(!esBloqueoAuto&&!esUnDia&&!esPasado)events.push({start:s,end:e,summary});
       }
       inEvent=false;
