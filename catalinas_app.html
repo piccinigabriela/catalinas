@@ -666,31 +666,29 @@ const $=id=>document.getElementById(id);
 const qAll=s=>document.querySelectorAll(s);
 
 async function loadFromBins(){
-  try{
-    const ac=new AbortController();
-    const tm=setTimeout(()=>ac.abort(),6000);
-    const opts={headers:{'X-Master-Key':JKEY,'X-Bin-Meta':'false'},signal:ac.signal};
-    const [rRes,gRes,cRes]=await Promise.all([
-      fetch(JURL+BIN_R+'/latest',opts),
-      fetch(JURL+BIN_G+'/latest',opts),
-      fetch(JURL+BIN_C+'/latest',opts)
-    ]);
-    clearTimeout(tm);
-    const rData=await rRes.json();
-    const gData=await gRes.json();
-    const cData=await cRes.json();
-    reservas=Array.isArray(rData.data)?rData.data:(Array.isArray(rData)?rData:[]);
-    gastos=Array.isArray(gData.data)?gData.data:(Array.isArray(gData)?gData:[]);
-    const waCloud=(cData.data&&cData.data.wa)?cData.data.wa:null;
-    if(waCloud) sl('cn_wa',waCloud);
-    const icalCloud=(cData.data&&cData.data.ical)?cData.data.ical:null;
-    if(icalCloud) sl('cn_ical',icalCloud);
-    const bloqueos=(cData.data&&cData.data.bloqueos)?cData.data.bloqueos:null;
-    if(bloqueos) sl('cn_bloqueos',bloqueos);
-  }catch(err){
-    console.log('JSONBin load error, using local:',err);
-    reservas=lo('cn_r',[]);
-    gastos=lo('cn_g',[]);
+  const hdr={'X-Master-Key':JKEY,'X-Bin-Meta':'false'};
+  const fetchBin=async(id)=>{
+    for(let i=0;i<3;i++){
+      try{
+        const res=await fetch(JURL+id+'/latest',{headers:hdr});
+        if(!res.ok)throw new Error('HTTP '+res.status);
+        return await res.json();
+      }catch(e){
+        console.log('fetchBin intento '+(i+1)+' fallido para '+id,e.message);
+        if(i<2)await new Promise(r=>setTimeout(r,2000*(i+1)));
+      }
+    }
+    return null;
+  };
+  const [rData,gData,cData]=await Promise.all([fetchBin(BIN_R),fetchBin(BIN_G),fetchBin(BIN_C)]);
+  if(rData){reservas=Array.isArray(rData.data)?rData.data:(Array.isArray(rData)?rData:[]);sl('cn_r',reservas);}
+  else{reservas=lo('cn_r',[]);console.log('Usando reservas del localStorage:',reservas.length);}
+  if(gData){gastos=Array.isArray(gData.data)?gData.data:(Array.isArray(gData)?gData:[]);sl('cn_g',gastos);}
+  else{gastos=lo('cn_g',[]);}
+  if(cData&&cData.data){
+    if(cData.data.wa)sl('cn_wa',cData.data.wa);
+    if(cData.data.ical)sl('cn_ical',cData.data.ical);
+    if(cData.data.bloqueos)sl('cn_bloqueos',cData.data.bloqueos);
   }
 }
 async function saveWaConfig(wa){
@@ -1434,8 +1432,13 @@ async function sincronizarIcal(){
         const url=proxyBase+encodeURIComponent(ical[code]);
         const res=await fetch(url);
         const text=await res.text();
-        if(!text||!text.includes('BEGIN:VCALENDAR')){continue;}
+        if(!text||!text.includes('BEGIN:VCALENDAR')){
+          // iCal vacío — limpiar bloqueos viejos de este depto
+          bloqueos[code]=[];
+          ok++;exito=true;break;
+        }
         bloqueos[code]=parseIcal(text);
+        console.log('iCal '+code+': '+bloqueos[code].length+' eventos');
         ok++;exito=true;break;
       }catch(e){console.log('iCal error '+code,e);}
     }
@@ -1454,7 +1457,16 @@ function parseIcal(text){
   let inEvent=false,dtstart='',dtend='',summary='';
   for(const line of lines){
     if(line==='BEGIN:VEVENT'){inEvent=true;dtstart='';dtend='';summary='';}
-    else if(line==='END:VEVENT'){if(dtstart&&dtend)events.push({start:icalDate(dtstart),end:icalDate(dtend),summary});inEvent=false;}
+    else if(line==='END:VEVENT'){
+      if(dtstart&&dtend){
+        const s=icalDate(dtstart),e=icalDate(dtend);
+        // Filtrar eventos de bloqueo automático de Airbnb y eventos de un solo día
+        const esBloqueoAuto=summary.toLowerCase().includes('not available')||summary.toLowerCase().includes('no disponible')||summary.toLowerCase().includes('bloqueado');
+        const esUnDia=s===e||(new Date(e)-new Date(s))<=86400000;
+        if(!esBloqueoAuto&&!esUnDia)events.push({start:s,end:e,summary});
+      }
+      inEvent=false;
+    }
     else if(inEvent){
       const propName=line.split(/[:;]/)[0];
       const propVal=line.includes(':')?line.substring(line.indexOf(':')+1).split('T')[0]:'';
