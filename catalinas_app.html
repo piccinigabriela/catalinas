@@ -408,6 +408,9 @@ tbody td:last-child{padding-right:22px;}
             <div class="form-group"><label>Plataforma</label>
               <select id="r-plataforma"><option value="Airbnb">Airbnb</option><option value="Directo">Directo</option><option value="Booking">Booking</option><option value="Otro">Otro</option></select>
             </div>
+            <div class="form-group"><label>Destino del cobro</label>
+              <select id="r-destino"><option value="">— Sin especificar —</option><option value="Airbnb">Airbnb</option><option value="Booking">Booking</option><option value="Efectivo">Efectivo</option><option value="Payoneer">Payoneer</option><option value="Billetera virtual">Billetera virtual</option></select>
+            </div>
             <div class="form-group full"><label>Notas</label><textarea id="r-notas" placeholder="Llegada tardía, mascota, etc."></textarea></div>
           </div>
           <div class="calc-preview">
@@ -440,7 +443,7 @@ tbody td:last-child{padding-right:22px;}
         </div>
         <div class="card" style="padding:0;overflow:hidden;">
           <div class="table-wrap"><table>
-            <thead><tr><th>#</th><th>Depto</th><th>Huésped</th><th>Check-in</th><th>Check-out</th><th>Noches</th><th>USD/N</th><th>Subtotal</th><th>Airbnb</th><th>Neto</th><th>Gestión</th><th>Líquido</th><th>Estado</th><th>Seña</th><th>Saldo</th><th></th></tr></thead>
+            <thead><tr><th>#</th><th>Depto</th><th>Huésped</th><th>Check-in</th><th>Check-out</th><th>Noches</th><th>USD/N</th><th>Subtotal</th><th>Airbnb</th><th>Neto</th><th>Gestión</th><th>Líquido</th><th>Estado</th><th>Destino</th><th>Seña</th><th>Saldo</th><th></th></tr></thead>
             <tbody id="tabla-reservas"></tbody>
           </table></div>
         </div>
@@ -581,6 +584,9 @@ tbody td:last-child{padding-right:22px;}
       <div class="form-group"><label>USD / Noche</label><input type="number" id="e-precio" step="0.01"></div>
       <div class="form-group"><label>Plataforma</label>
         <select id="e-plataforma"><option value="Airbnb">Airbnb</option><option value="Directo">Directo</option><option value="Booking">Booking</option><option value="Otro">Otro</option></select>
+        </div>
+        <div class="form-group"><label>Destino del cobro</label>
+        <select id="e-destino"><option value="">— Sin especificar —</option><option value="Airbnb">Airbnb</option><option value="Booking">Booking</option><option value="Efectivo">Efectivo</option><option value="Payoneer">Payoneer</option><option value="Billetera virtual">Billetera virtual</option></select>
       </div>
       <div class="form-group full"><label>Notas</label><textarea id="e-notas"></textarea></div>
       <div class="form-group full" style="border-top:1px solid var(--line);padding-top:16px;margin-top:4px;">
@@ -865,7 +871,7 @@ function guardarReserva(){
   if(new Date(co)<=new Date(ci)){toast('Check-out debe ser posterior al check-in',false);return;}
   const conf=reservas.find(r=>r.depto===dep&&r.estado!=='Cancelada'&&!(co<=r.checkin||ci>=r.checkout));
   if(conf&&!(ci===conf.checkout||co===conf.checkin)){toast(`Superposición con ${conf.huesped} en ${DN[dep]}`,false);return;}
-  reservas.push({id:uid(),depto:dep,huesped:hue,nac:$('r-nac').value.trim(),checkin:ci,checkout:co,precio:pre,plataforma:$('r-plataforma').value,estado:$('r-estado').value,notas:$('r-notas').value.trim(),creado:new Date().toISOString()});
+  reservas.push({id:uid(),depto:dep,huesped:hue,nac:$('r-nac').value.trim(),checkin:ci,checkout:co,precio:pre,plataforma:$('r-plataforma').value,destino:$('r-destino').value,estado:$('r-estado').value,notas:$('r-notas').value.trim(),creado:new Date().toISOString()});
   saveToSheets('reservas',reservas);clearReservaForm();toast('Reserva guardada');
 }
 function clearReservaForm(){['r-depto','r-huesped','r-nac','r-checkin','r-checkout','r-precio','r-notas'].forEach(id=>{const e=$(id);if(e)e.value='';});['cp-noches','cp-subtotal','cp-airbnb','cp-neto','cp-gestion','cp-liquido'].forEach(id=>$(id).textContent='—');}
@@ -889,6 +895,7 @@ function renderReservas(){
       <td style="color:var(--warn)">${fmt(c.ges)}</td>
       <td style="font-weight:700;color:var(--ok)">${fmt(c.liq)}</td>
       <td><span class="badge ${badgeClass(r.estado)}">${r.estado}</span></td>
+      <td style="font-size:0.78rem;color:var(--muted)">${r.destino||'—'}</td>
       <td style="font-weight:600;color:var(--ok)">${senia?fmt(senia):'—'}</td>
       <td style="font-weight:600;color:${saldo?(pend<0.01?'var(--ok)':'var(--err)'):'var(--muted)'}">${saldo?fmt(saldo)+(pend<0.01?' ✓':''):'—'}</td>
       <td>${ia?`<div style="display:flex;gap:6px"><button class="btn-icon-sm" onclick="editRes('${r.id}')" aria-label="Editar"><svg><use href="#i-edit"/></svg></button><button class="btn-icon-sm danger" onclick="delRes('${r.id}')" aria-label="Eliminar"><svg><use href="#i-close"/></svg></button></div>`:''}</td>
@@ -897,8 +904,8 @@ function renderReservas(){
 }
 function delRes(id){if(cu!=='admin')return;if(!confirm('¿Eliminar reserva?'))return;reservas=reservas.filter(r=>r.id!==id);saveToSheets('reservas',reservas);renderReservas();toast('Reserva eliminada');}
 function exportReservas(){
-  const h=['Depto','Huésped','Nacionalidad','Check-in','Check-out','Noches','USD/Noche','Subtotal','Com.Airbnb','Neto','Com.Gestión','Líquido','Estado','Plataforma','Notas','Seña','Saldo'];
-  const rows=reservas.map(r=>{const c=calc(r);return csvRow([DN[r.depto],r.huesped,r.nac||'',r.checkin,r.checkout,c.n,r.precio,c.sub.toFixed(2),c.air.toFixed(2),c.net.toFixed(2),c.ges.toFixed(2),c.liq.toFixed(2),r.estado,r.plataforma,r.notas||'',r.senia||0,r.saldo||0]);});
+  const h=['Depto','Huésped','Nacionalidad','Check-in','Check-out','Noches','USD/Noche','Subtotal','Com.Airbnb','Neto','Com.Gestión','Líquido','Estado','Plataforma','Destino cobro','Notas','Seña','Saldo'];
+  const rows=reservas.map(r=>{const c=calc(r);return csvRow([DN[r.depto],r.huesped,r.nac||'',r.checkin,r.checkout,c.n,r.precio,c.sub.toFixed(2),c.air.toFixed(2),c.net.toFixed(2),c.ges.toFixed(2),c.liq.toFixed(2),r.estado,r.plataforma,r.destino||'',r.notas||'',r.senia||0,r.saldo||0]);});
   csvDown([csvRow(h),...rows],'reservas_catalinas.csv');
 }
 function exportReservasPDF(){
@@ -1098,7 +1105,15 @@ function renderRendimiento(){
     <div class="totals-item"><div class="tl">Gastos</div><div class="tv" style="color:var(--err)">${fmt(tgas)}</div></div>
     <div class="totals-item"><div class="tl">Noches Ocupadas</div><div class="tv">${tno}</div></div>
     <div class="totals-item"><div class="tl">Reservas</div><div class="tv">${fil.length}</div></div>
-    <div class="totals-item highlight"><div class="tl">Resultado Neto</div><div class="tv">${fmt(tl-tgas)}</div></div>`;
+    <div class="totals-item highlight"><div class="tl">Resultado Neto</div><div class="tv">${fmt(tl-tgas)}</div></div>
+    ${(()=>{
+      const destinos={};
+      fil.forEach(r=>{const d=r.destino||'Sin especificar';if(!destinos[d])destinos[d]=0;destinos[d]+=calc(r).liq;});
+      const keys=Object.keys(destinos);
+      if(!keys.length)return'';
+      return'<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--cream2)"><div style="font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Líquido por destino de cobro</div>'+
+      keys.map(k=>`<div class="totals-item"><div class="tl">${k}</div><div class="tv" style="color:var(--navy)">${fmt(destinos[k])}</div></div>`).join('')+'</div>';
+    })()}`;
 }
 function exportRendimiento(){
   const mv=$('rend-mes').value,ay=parseInt($('rend-anio').value);
@@ -1561,6 +1576,7 @@ function editRes(id){
   $('e-depto').value=r.depto;$('e-huesped').value=r.huesped;$('e-nac').value=r.nac||'';
   $('e-estado').value=r.estado;$('e-checkin').value=r.checkin;$('e-checkout').value=r.checkout;
   $('e-precio').value=r.precio;$('e-plataforma').value=r.plataforma;$('e-notas').value=r.notas||'';
+  if($('e-destino'))$('e-destino').value=r.destino||'';
   $('e-senia').value=r.senia||'';$('e-saldo').value=r.saldo||'';
   const upd=()=>{
     const c=calc(r);const senia=parseFloat($('e-senia').value)||0;const saldo=parseFloat($('e-saldo').value)||0;
@@ -1580,7 +1596,7 @@ function saveEdit(){
   if(conf&&!(ci===conf.checkout||co===conf.checkin)){toast('Superposición con '+conf.huesped+' en '+DN[dep],false);return;}
   reservas=reservas.map(r=>{
     if(r.id!==editingId)return r;
-    return{...r,depto:dep,huesped:hue,nac:$('e-nac').value.trim(),checkin:ci,checkout:co,precio:pre,plataforma:$('e-plataforma').value,estado:$('e-estado').value,notas:$('e-notas').value.trim(),senia:parseFloat($('e-senia').value)||0,saldo:parseFloat($('e-saldo').value)||0};
+    return{...r,depto:dep,huesped:hue,nac:$('e-nac').value.trim(),checkin:ci,checkout:co,precio:pre,plataforma:$('e-plataforma').value,destino:$('e-destino')?$('e-destino').value:'',estado:$('e-estado').value,notas:$('e-notas').value.trim(),senia:parseFloat($('e-senia').value)||0,saldo:parseFloat($('e-saldo').value)||0};
   });
   saveToSheets('reservas',reservas);closeEdit();renderReservas();toast('Reserva actualizada');
 }
