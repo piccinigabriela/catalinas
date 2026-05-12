@@ -436,6 +436,7 @@ tbody td:last-child{padding-right:22px;}
           <select id="fil-depto"><option value="">Todos</option><option value="D01">PB5</option><option value="D02">1A</option><option value="D03">2C</option><option value="D04">2D</option><option value="D05">PR1</option><option value="D06">PR2</option><option value="D07">1B</option></select>
           <label>Estado</label>
           <select id="fil-estado"><option value="">Todos</option><option value="Confirmada">Confirmada</option><option value="Pendiente">Pendiente</option><option value="Stand by">Stand by</option><option value="Shown">Shown</option><option value="Non show">Non show</option><option value="Cancelada">Cancelada</option><option value="Cortesía">Cortesía</option></select>
+          <input type="text" id="fil-nombre" placeholder="🔍 Buscar huésped..." style="padding:6px 12px;border:1px solid var(--line);border-radius:var(--r);font-size:0.82rem;color:var(--text);background:var(--white);min-width:180px;" oninput="renderReservas()">
           <div class="export-group">
             <button class="btn btn-outline btn-sm" onclick="exportReservas()"><svg><use href="#i-download"/></svg>CSV</button>
             <button class="btn btn-accent btn-sm" onclick="exportReservasPDF()"><svg><use href="#i-pdf"/></svg>PDF</button>
@@ -897,7 +898,8 @@ function badgeClass(estado){
 }
 function renderReservas(){
   const ia=cu==='admin',fd=$('fil-depto').value,fe=$('fil-estado').value;
-  const data=reservas.filter(r=>(!fd||r.depto===fd)&&(!fe||r.estado===fe)).sort((a,b)=>new Date(b.creado)-new Date(a.creado));
+  const fn=($('fil-nombre')?.value||'').toLowerCase().trim();
+  const data=reservas.filter(r=>(!fd||r.depto===fd)&&(!fe||r.estado===fe)&&(!fn||r.huesped.toLowerCase().includes(fn))).sort((a,b)=>new Date(b.creado)-new Date(a.creado));
   const tb=$('tabla-reservas');
   if(!data.length){tb.innerHTML=`<tr><td colspan="16" style="text-align:center;padding:40px;color:var(--muted)">Sin reservas</td></tr>`;return;}
   tb.innerHTML=data.map((r,i)=>{const c=calc(r);const senia=r.senia||0,saldo=r.saldo||0,pend=Math.max(0,c.sub-senia-saldo);
