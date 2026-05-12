@@ -951,13 +951,15 @@ function renderCalendario(){
     for(let d=1;d<=dim;d++){
       const ds=`${anio}-${String(mes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
       const res=byDep[code][ds];
-      const bloq=!res&&isBlocked(code,ds);
-      parts.push(res?`<div class="cal-cell occupied" style="background:${DC[code]}" title="${esc(res.huesped)}">${esc(res.huesped.split(' ')[0].substr(0,4))}</div>`:bloq?`<div class="cal-cell blocked" title="Bloqueado Airbnb">Air</div>`:`<div class="cal-cell"></div>`);
+      const bloqInfo=!res&&getBloqueo(code,ds);
+      const bloqLabel=bloqInfo?bloqInfo.plat==='Bk'?'Bk':'Air':null;
+      const bloqStyle=bloqInfo?bloqInfo.plat==='Bk'?'background:repeating-linear-gradient(45deg,#003580,#003580 4px,#0057b8 4px,#0057b8 8px)':'background:repeating-linear-gradient(45deg,#d68b3f,#d68b3f 4px,#e9a85d 4px,#e9a85d 8px)':null;
+      parts.push(res?`<div class="cal-cell occupied" style="background:${DC[code]}" title="${esc(res.huesped)}">${esc(res.huesped.split(' ')[0].substr(0,4))}</div>`:bloqInfo?`<div class="cal-cell blocked" style="${bloqStyle}" title="Bloqueado ${bloqInfo.plat==='Bk'?'Booking':'Airbnb'}">${bloqLabel}</div>`:`<div class="cal-cell"></div>`);
     }
   });
   parts.push('</div>');
   $('calendario-grid').innerHTML=parts.join('');
-  $('cal-legend').innerHTML=DEPTOS.map(c=>`<span class="cal-legend-item"><span class="sw" style="background:${DC[c]}"></span>${DN[c]}</span>`).join('')+`<span class="cal-legend-item"><span class="sw" style="background:repeating-linear-gradient(45deg,#d68b3f,#d68b3f 4px,#e9a85d 4px,#e9a85d 8px)"></span>Bloqueado Airbnb</span><span class="cal-legend-item"><span class="sw" style="background:var(--paper-2);border:1px solid var(--line-2)"></span>Libre</span>`;
+  $('cal-legend').innerHTML=DEPTOS.map(c=>`<span class="cal-legend-item"><span class="sw" style="background:${DC[c]}"></span>${DN[c]}</span>`).join('')+`<span class="cal-legend-item"><span class="sw" style="background:repeating-linear-gradient(45deg,#d68b3f,#d68b3f 4px,#e9a85d 4px,#e9a85d 8px)"></span>Airbnb</span><span class="cal-legend-item"><span class="sw" style="background:repeating-linear-gradient(45deg,#003580,#003580 4px,#0057b8 4px,#0057b8 8px)"></span>Booking</span><span class="cal-legend-item"><span class="sw" style="background:var(--paper-2);border:1px solid var(--line-2)"></span>Libre</span>`;
 }
 function exportOcupacion(){
   const mes=parseInt($('cal-mes').value),anio=parseInt($('cal-anio').value);
@@ -1512,7 +1514,8 @@ function parseIcal(text){
   return events;
 }
 function icalDate(s){if(s.length===8)return s.substring(0,4)+'-'+s.substring(4,6)+'-'+s.substring(6,8);return s;}
-function isBlocked(code,dateStr){const bloqueos=lo('cn_bloqueos',{});const events=bloqueos[code]||[];return events.some(e=>e.start<=dateStr&&e.end>dateStr);}
+function isBlocked(code,dateStr){return!!getBloqueo(code,dateStr);}
+function getBloqueo(code,dateStr){const bloqueos=lo('cn_bloqueos',{});const events=bloqueos[code]||[];return events.find(e=>e.start<=dateStr&&e.end>dateStr)||null;}
 
 function renderConfig(){
   pins=lo('cn_p',{...DEFAULT_PINS});
