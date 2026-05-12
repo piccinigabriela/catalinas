@@ -400,7 +400,7 @@ tbody td:last-child{padding-right:22px;}
             <div class="form-group"><label>Huésped</label><input type="text" id="r-huesped" placeholder="Nombre completo"></div>
             <div class="form-group"><label>Nacionalidad</label><input type="text" id="r-nac" placeholder="Ej: Estadounidense"></div>
             <div class="form-group"><label>Estado</label>
-              <select id="r-estado"><option value="Confirmada">Confirmada</option><option value="Pendiente">Pendiente</option><option value="Cancelada">Cancelada</option><option value="Cortesía">Cortesía</option></select>
+              <select id="r-estado"><option value="Confirmada">Confirmada</option><option value="Pendiente">Pendiente</option><option value="Stand by">Stand by</option><option value="Shown">Shown</option><option value="Non show">Non show</option><option value="Cancelada">Cancelada</option><option value="Cortesía">Cortesía</option></select>
             </div>
             <div class="form-group"><label>Check-in</label><input type="date" id="r-checkin"></div>
             <div class="form-group"><label>Check-out</label><input type="date" id="r-checkout"></div>
@@ -435,7 +435,7 @@ tbody td:last-child{padding-right:22px;}
           <label>Depto</label>
           <select id="fil-depto"><option value="">Todos</option><option value="D01">PB5</option><option value="D02">1A</option><option value="D03">2C</option><option value="D04">2D</option><option value="D05">PR1</option><option value="D06">PR2</option><option value="D07">1B</option></select>
           <label>Estado</label>
-          <select id="fil-estado"><option value="">Todos</option><option value="Confirmada">Confirmada</option><option value="Pendiente">Pendiente</option><option value="Cancelada">Cancelada</option><option value="Cortesía">Cortesía</option></select>
+          <select id="fil-estado"><option value="">Todos</option><option value="Confirmada">Confirmada</option><option value="Pendiente">Pendiente</option><option value="Stand by">Stand by</option><option value="Shown">Shown</option><option value="Non show">Non show</option><option value="Cancelada">Cancelada</option><option value="Cortesía">Cortesía</option></select>
           <div class="export-group">
             <button class="btn btn-outline btn-sm" onclick="exportReservas()"><svg><use href="#i-download"/></svg>CSV</button>
             <button class="btn btn-accent btn-sm" onclick="exportReservasPDF()"><svg><use href="#i-pdf"/></svg>PDF</button>
@@ -577,7 +577,7 @@ tbody td:last-child{padding-right:22px;}
       <div class="form-group"><label>Huésped</label><input type="text" id="e-huesped"></div>
       <div class="form-group"><label>Nacionalidad</label><input type="text" id="e-nac"></div>
       <div class="form-group"><label>Estado</label>
-        <select id="e-estado"><option value="Confirmada">Confirmada</option><option value="Pendiente">Pendiente</option><option value="Cancelada">Cancelada</option><option value="Cortesía">Cortesía</option></select>
+        <select id="e-estado"><option value="Confirmada">Confirmada</option><option value="Pendiente">Pendiente</option><option value="Stand by">Stand by</option><option value="Shown">Shown</option><option value="Non show">Non show</option><option value="Cancelada">Cancelada</option><option value="Cortesía">Cortesía</option></select>
       </div>
       <div class="form-group"><label>Check-in</label><input type="date" id="e-checkin"></div>
       <div class="form-group"><label>Check-out</label><input type="date" id="e-checkout"></div>
@@ -806,7 +806,17 @@ const fmtD=d=>{if(!d)return'—';const p=d.split('-');return`${p[2]}/${p[1]}/${p
 const nights=(ci,co)=>Math.max(0,Math.round((new Date(co)-new Date(ci))/86400000));
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).substr(2,4);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-function calc(r){const n=nights(r.checkin,r.checkout);const sub=n*r.precio;const air=r.plataforma==='Airbnb'?sub*0.03:0;const net=sub-air;const ges=net*0.12;return{n,sub,air,net,ges,liq:net-ges};}
+function calc(r){
+  const n=nights(r.checkin,r.checkout);
+  const sub=n*r.precio;
+  const air=r.plataforma==='Airbnb'?sub*0.03:0;
+  const net=sub-air;
+  const ges=net*0.12;
+  const liq=net-ges;
+  // Comisión Booking: 15% sobre líquido, solo si estado=Shown
+  const bkCom=r.plataforma==='Booking'&&r.estado==='Shown'?liq*0.15:0;
+  return{n,sub,air,net,ges,liq,bkCom};
+}
 function toast(msg,ok=true){const t=$('toast');$('toast-msg').textContent=msg;$('toast-icon').firstElementChild.setAttribute('href',ok?'#i-check':'#i-alert');t.classList.toggle('err',!ok);t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
 function csvDown(rows,filename){
   const content='sep=;\n'+rows.join('\n');
@@ -877,7 +887,14 @@ function guardarReserva(){
 function clearReservaForm(){['r-depto','r-huesped','r-nac','r-checkin','r-checkout','r-precio','r-notas'].forEach(id=>{const e=$(id);if(e)e.value='';});['cp-noches','cp-subtotal','cp-airbnb','cp-neto','cp-gestion','cp-liquido'].forEach(id=>$(id).textContent='—');}
 
 // ── RESERVAS ──
-function badgeClass(estado){return estado==='Confirmada'?'badge-ok':estado==='Pendiente'?'badge-warn':estado==='Cortesía'?'badge-purple':'badge-err';}
+function badgeClass(estado){
+  return estado==='Confirmada'?'badge-ok':
+    estado==='Pendiente'?'badge-warn':
+    estado==='Stand by'?'badge-warn':
+    estado==='Shown'?'badge-ok':
+    estado==='Non show'?'badge-err':
+    estado==='Cortesía'?'badge-purple':'badge-err';
+}
 function renderReservas(){
   const ia=cu==='admin',fd=$('fil-depto').value,fe=$('fil-estado').value;
   const data=reservas.filter(r=>(!fd||r.depto===fd)&&(!fe||r.estado===fe)).sort((a,b)=>new Date(b.creado)-new Date(a.creado));
@@ -1108,6 +1125,12 @@ function renderRendimiento(){
     <div class="totals-item"><div class="tl">Noches Ocupadas</div><div class="tv">${tno}</div></div>
     <div class="totals-item"><div class="tl">Reservas</div><div class="tv">${fil.length}</div></div>
     <div class="totals-item highlight"><div class="tl">Resultado Neto</div><div class="tv">${fmt(tl-tgas)}</div></div>
+    ${(()=>{
+      const bkShown=fil.filter(r=>r.plataforma==='Booking'&&r.estado==='Shown');
+      const bkDeuda=bkShown.reduce((s,r)=>s+calc(r).bkCom,0);
+      if(!bkDeuda)return'';
+      return`<div class="totals-item" style="border-left:3px solid #f59e0b;padding-left:12px;margin-top:8px"><div class="tl">⚠️ Deuda Booking (15%)</div><div class="tv" style="color:#f59e0b">${fmt(bkDeuda)}</div></div><div style="font-size:0.72rem;color:var(--muted);margin-top:4px">${bkShown.length} reserva${bkShown.length>1?'s':''} con estado Shown</div>`;
+    })()}
     ${(()=>{
       const destinos={};
       fil.forEach(r=>{const d=r.destino||'Sin especificar';if(!destinos[d])destinos[d]=0;destinos[d]+=calc(r).liq;});
