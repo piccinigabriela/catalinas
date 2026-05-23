@@ -476,6 +476,7 @@ thead .res-sticky-1,thead .res-sticky-2,thead .res-sticky-3{background:var(--pap
           <div class="export-group">
             <button class="btn btn-outline btn-sm" onclick="exportReservas()"><svg><use href="#i-download"/></svg>CSV</button>
             <button class="btn btn-accent btn-sm" onclick="exportReservasPDF()"><svg><use href="#i-pdf"/></svg>PDF</button>
+            <label class="btn btn-primary btn-sm" style="cursor:pointer" title="Importar CSV o Excel"><svg><use href="#i-upload"/></svg>Importar<input type="file" accept=".csv,.xlsx,.xls" style="display:none" onchange="importarCSV(this)"></label>
           </div>
         </div>
         <div class="card" style="padding:0;overflow:hidden;">
@@ -1013,6 +1014,57 @@ function exportReservasPDF(){
 }
 
 // ── OCUPACIÓN ──
+function importarCSV(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const text=e.target.result;
+    const sep=text.indexOf(';')>text.indexOf(',')&&text.indexOf(';')!==-1?';':',';
+    const lines=text.replace(/\r/g,'').split('\n').filter(l=>l.trim()&&!l.startsWith('sep='));
+    if(lines.length<2){toast('El archivo no tiene datos',false);return;}
+    const headers=lines[0].split(sep).map(h=>h.replace(/"/g,'').trim().toLowerCase());
+    const col=(names)=>{for(const n of names){const i=headers.findIndex(h=>h.includes(n));if(i>=0)return i;}return -1;};
+    const iDepto=col(['depto','departamento','apt','unidad']);
+    const iHuesped=col(['huesped','huésped','nombre','guest','pasajero']);
+    const iCheckin=col(['checkin','check-in','entrada','llegada','from']);
+    const iCheckout=col(['checkout','check-out','salida','hasta','to']);
+    const iPrecio=col(['precio','price','tarifa','rate','usd/n','$/n']);
+    const iEstado=col(['estado','status']);
+    const iPlat=col(['plataforma','platform','canal']);
+    const iNotas=col(['notas','notes','comentario']);
+    if(iHuesped<0||iCheckin<0||iCheckout<0){toast('Necesitás columnas: Huésped, Check-in, Check-out',false);input.value='';return;}
+    const parseDate=(s)=>{
+      if(!s)return'';s=s.replace(/"/g,'').trim();
+      if(/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)){const[d,m,y]=s.split('/');return`${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;}
+      if(/^\d{1,2}-\d{1,2}-\d{4}$/.test(s)){const[d,m,y]=s.split('-');return`${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;}
+      return s.substring(0,10);
+    };
+    const deptoMap={};
+    Object.entries(DN).forEach(([k,v])=>{deptoMap[v.toLowerCase()]=k;deptoMap[k.toLowerCase()]=k;});
+    const nuevas=[];const errores=[];
+    for(let i=1;i<lines.length;i++){
+      const cells=lines[i].split(sep).map(c=>c.replace(/^"|"$/g,'').trim());
+      const huesped=iHuesped>=0?cells[iHuesped]||'':'';
+      const ci=parseDate(iCheckin>=0?cells[iCheckin]:'');
+      const co=parseDate(iCheckout>=0?cells[iCheckout]:'');
+      if(!huesped||!ci||!co){errores.push(i+1);continue;}
+      const deptoRaw=iDepto>=0?cells[iDepto]||'':'';
+      const depto=deptoMap[deptoRaw.toLowerCase()]||DEPTOS[0];
+      nuevas.push({id:uid(),depto,huesped,nac:'',checkin:ci,checkout:co,
+        precio:iPrecio>=0?parseFloat(cells[iPrecio])||0:0,
+        estado:iEstado>=0?cells[iEstado]||'Confirmada':'Confirmada',
+        plataforma:iPlat>=0?cells[iPlat]||'Importado':'Importado',
+        notas:iNotas>=0?cells[iNotas]||'':'',
+        early:false,late:false,senia:0,saldo:0,creado:new Date().toISOString()});
+    }
+    if(!nuevas.length){toast('Sin reservas válidas en el archivo',false);input.value='';return;}
+    const msg=`Importar ${nuevas.length} reservas${errores.length?` (${errores.length} filas ignoradas)`:''}?\n\n¿Agregar a las existentes?`;
+    if(confirm(msg)){reservas=[...reservas,...nuevas];saveToSheets('reservas',reservas);renderReservas();toast(`${nuevas.length} reservas importadas ✓`);}
+    input.value='';
+  };
+  reader.readAsText(file,'UTF-8');
+}
+
 function renderCalendario(){
   const mes=parseInt($('cal-mes').value),anio=parseInt($('cal-anio').value);
   const dim=new Date(anio,mes+1,0).getDate();
