@@ -27,6 +27,18 @@
   --shadow-1:0 1px 2px rgba(26,25,24,0.04);
   --shadow-2:0 8px 28px -12px rgba(26,25,24,0.12);
 }
+html.dark{
+  --ink:#e8e4dc;--ink-2:#d4cfc6;--muted:#8a8480;--muted-2:#6a6460;
+  --paper:#1a1917;--paper-2:#242320;--paper-3:#2e2c28;
+  --line:rgba(232,228,220,0.08);--line-2:rgba(232,228,220,0.14);
+  --accent:#d4a05a;--accent-2:#b8833d;--accent-soft:rgba(212,160,90,0.15);
+  --ok:#6a9a7a;--ok-bg:rgba(79,122,90,0.2);
+  --warn:#c88c4b;--warn-bg:rgba(168,108,43,0.2);
+  --err:#c86050;--err-bg:rgba(168,66,46,0.2);
+  --purple:#9a7daa;--purple-bg:rgba(122,93,138,0.2);
+  --shadow-1:0 1px 2px rgba(0,0,0,0.2);
+  --shadow-2:0 8px 28px -12px rgba(0,0,0,0.4);
+}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html{font-size:15px;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
 body{font-family:'Figtree',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;font-weight:400;letter-spacing:-0.005em;}
@@ -333,6 +345,17 @@ thead .res-sticky-1,thead .res-sticky-2,thead .res-sticky-3{background:var(--pap
   .wa-btns{margin-left:0;width:100%;}
   .wa-btns .btn{flex:1;justify-content:center;}
 }
+
+/* Dark mode overrides */
+html.dark .sidebar{background:var(--paper);}
+html.dark .topbar{background:var(--paper);border-bottom-color:var(--line);}
+html.dark .card{background:var(--paper-2);}
+html.dark .stat-card{background:var(--paper-2);}
+html.dark .cal-popup-box{background:var(--paper-2);}
+html.dark .cal-popup-value{color:var(--ink);}
+html.dark .modal-backdrop{background:rgba(0,0,0,0.6);}
+html.dark .modal{background:var(--paper-2);}
+html.dark .loading-overlay{background:rgba(0,0,0,0.7);}
 </style>
 </head>
 <body>
@@ -407,7 +430,7 @@ thead .res-sticky-1,thead .res-sticky-2,thead .res-sticky-3{background:var(--pap
   <div class="main">
     <div class="topbar">
       <div class="topbar-title" id="topbar-title">—</div>
-      <div class="topbar-date" id="topbar-date"></div>
+      <div style="display:flex;align-items:center;gap:12px"><button id="dark-toggle" onclick="toggleDark()" style="background:none;border:1px solid var(--line-2);border-radius:var(--r);padding:5px 10px;cursor:pointer;font-size:0.82rem;color:var(--muted);line-height:1" title="Modo oscuro">🌙</button><div class="topbar-date" id="topbar-date"></div></div>
     </div>
     <div class="content">
 
@@ -1864,6 +1887,21 @@ function saveEdit(){
 }
 
 // ── EVENT LISTENERS ──
+// ── DARK MODE ──
+function toggleDark(){
+  const isDark=document.documentElement.classList.toggle('dark');
+  localStorage.setItem('cn_dark',isDark?'1':'0');
+  const btn=document.getElementById('dark-toggle');
+  if(btn)btn.textContent=isDark?'☀️':'🌙';
+}
+(function(){
+  const saved=localStorage.getItem('cn_dark');
+  const prefersDark=window.matchMedia('(prefers-color-scheme:dark)').matches;
+  if(saved==='1'||(saved===null&&prefersDark)){
+    document.documentElement.classList.add('dark');
+    document.addEventListener('DOMContentLoaded',()=>{const b=document.getElementById('dark-toggle');if(b)b.textContent='☀️';});
+  }
+})();
 document.addEventListener('DOMContentLoaded',()=>{
   // Sesión persistente: si hay usuario en sessionStorage, re-login sin PIN
   const savedCu=sessionStorage.getItem('cn_cu');
