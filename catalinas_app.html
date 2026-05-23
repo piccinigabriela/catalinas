@@ -423,6 +423,7 @@ html.dark .loading-overlay{background:rgba(0,0,0,0.7);}
     <div class="mobile-header-actions">
       <div class="mobile-user" id="mobile-user">—</div>
       <button class="icon-btn" id="mobile-config-btn" onclick="showScreen('config')" title="Configuración" aria-label="Configuración" style="display:none"><svg width="15" height="15"><use href="#i-settings"/></svg></button>
+      <button class="icon-btn" id="dark-toggle-mobile" onclick="toggleDark()" title="Modo oscuro" aria-label="Modo oscuro" style="font-size:0.9rem;line-height:1">🌙</button>
       <button class="icon-btn danger" onclick="logout()" aria-label="Cerrar sesión"><svg width="15" height="15"><use href="#i-power"/></svg></button>
     </div>
   </div>
@@ -1891,15 +1892,19 @@ function saveEdit(){
 function toggleDark(){
   const isDark=document.documentElement.classList.toggle('dark');
   localStorage.setItem('cn_dark',isDark?'1':'0');
-  const btn=document.getElementById('dark-toggle');
-  if(btn)btn.textContent=isDark?'☀️':'🌙';
+  const icon=isDark?'☀️':'🌙';
+  const btn=document.getElementById('dark-toggle');if(btn)btn.textContent=icon;
+  const btnM=document.getElementById('dark-toggle-mobile');if(btnM)btnM.textContent=icon;
 }
 (function(){
   const saved=localStorage.getItem('cn_dark');
   const prefersDark=window.matchMedia('(prefers-color-scheme:dark)').matches;
   if(saved==='1'||(saved===null&&prefersDark)){
     document.documentElement.classList.add('dark');
-    document.addEventListener('DOMContentLoaded',()=>{const b=document.getElementById('dark-toggle');if(b)b.textContent='☀️';});
+    document.addEventListener('DOMContentLoaded',()=>{
+      const b=document.getElementById('dark-toggle');if(b)b.textContent='☀️';
+      const bm=document.getElementById('dark-toggle-mobile');if(bm)bm.textContent='☀️';
+    });
   }
 })();
 document.addEventListener('DOMContentLoaded',()=>{
