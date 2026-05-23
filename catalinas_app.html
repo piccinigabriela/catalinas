@@ -195,6 +195,19 @@ thead .res-sticky-1,thead .res-sticky-2,thead .res-sticky-3{background:var(--pap
 .cal-cell{background:var(--paper-2);min-height:32px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:600;text-align:center;padding:2px;color:var(--muted-2);}
 .cal-cell.occupied{color:white;padding:2px 4px;font-size:0.62rem;overflow:hidden;text-overflow:ellipsis;}
 .cal-cell.blocked{background:repeating-linear-gradient(45deg,#d68b3f,#d68b3f 4px,#e9a85d 4px,#e9a85d 8px);color:white;}
+/* Celdas partidas */
+.cal-cell.split{padding:0;overflow:hidden;position:relative;cursor:pointer;}
+.cal-cell.split .split-top{position:absolute;top:0;left:0;right:0;bottom:0;clip-path:polygon(0 0,100% 0,0 100%);display:flex;align-items:flex-start;justify-content:flex-start;padding:2px 3px;font-size:0.55rem;font-weight:700;color:white;line-height:1;}
+.cal-cell.split .split-bot{position:absolute;top:0;left:0;right:0;bottom:0;clip-path:polygon(100% 0,100% 100%,0 100%);display:flex;align-items:flex-end;justify-content:flex-end;padding:2px 3px;font-size:0.55rem;font-weight:700;color:white;line-height:1;}
+.cal-cell.split .split-line{position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(to bottom right,transparent calc(50% - 0.5px),rgba(255,255,255,0.6),transparent calc(50% + 0.5px));pointer-events:none;}
+/* Early/Late badge en celda normal */
+.cal-cell.early-ci::after{content:"▶";position:absolute;top:1px;left:2px;font-size:0.45rem;opacity:0.8;}
+.cal-cell.late-co::after{content:"◀";position:absolute;bottom:1px;right:2px;font-size:0.45rem;opacity:0.8;}
+.cal-cell.occupied{position:relative;}
+/* Checkbox early/late en formularios */
+.ci-co-group{display:flex;flex-direction:column;gap:5px;}
+.ci-co-check{display:flex;align-items:center;gap:6px;font-size:0.75rem;color:var(--muted);font-weight:500;cursor:pointer;margin-top:2px;}
+.ci-co-check input[type=checkbox]{width:14px;height:14px;accent-color:var(--accent);cursor:pointer;}
 .cal-legend{display:flex;gap:14px;margin-top:14px;flex-wrap:wrap;font-size:0.74rem;color:var(--muted);align-items:center;}
 .cal-legend-item{display:flex;align-items:center;gap:6px;}
 .cal-legend-item .sw{width:12px;height:12px;border-radius:3px;}
@@ -425,8 +438,8 @@ thead .res-sticky-1,thead .res-sticky-2,thead .res-sticky-3{background:var(--pap
             <div class="form-group"><label>Estado</label>
               <select id="r-estado"><option value="Confirmada">Confirmada</option><option value="Pendiente">Pendiente</option><option value="Stand by">Stand by</option><option value="Shown">Shown</option><option value="Non show">Non show</option><option value="Cancelada">Cancelada</option><option value="Cortesía">Cortesía</option><option value="Devolución">Devolución</option></select>
             </div>
-            <div class="form-group"><label>Check-in</label><input type="date" id="r-checkin"></div>
-            <div class="form-group"><label>Check-out</label><input type="date" id="r-checkout"></div>
+            <div class="form-group"><label>Check-in</label><div class="ci-co-group"><input type="date" id="r-checkin"><label class="ci-co-check"><input type="checkbox" id="r-early"> Early check-in</label></div></div>
+            <div class="form-group"><label>Check-out</label><div class="ci-co-group"><input type="date" id="r-checkout"><label class="ci-co-check"><input type="checkbox" id="r-late"> Late checkout</label></div></div>
             <div class="form-group"><label>USD / Noche</label><input type="number" id="r-precio" placeholder="120" step="0.01" min="0"></div>
             <div class="form-group"><label>Plataforma</label>
               <select id="r-plataforma"><option value="Airbnb">Airbnb</option><option value="Directo">Directo</option><option value="Booking">Booking</option><option value="Otro">Otro</option></select>
@@ -603,8 +616,8 @@ thead .res-sticky-1,thead .res-sticky-2,thead .res-sticky-3{background:var(--pap
       <div class="form-group"><label>Estado</label>
         <select id="e-estado"><option value="Confirmada">Confirmada</option><option value="Pendiente">Pendiente</option><option value="Stand by">Stand by</option><option value="Shown">Shown</option><option value="Non show">Non show</option><option value="Cancelada">Cancelada</option><option value="Cortesía">Cortesía</option><option value="Devolución">Devolución</option></select>
       </div>
-      <div class="form-group"><label>Check-in</label><input type="date" id="e-checkin"></div>
-      <div class="form-group"><label>Check-out</label><input type="date" id="e-checkout"></div>
+      <div class="form-group"><label>Check-in</label><div class="ci-co-group"><input type="date" id="e-checkin"><label class="ci-co-check"><input type="checkbox" id="e-early"> Early check-in</label></div></div>
+      <div class="form-group"><label>Check-out</label><div class="ci-co-group"><input type="date" id="e-checkout"><label class="ci-co-check"><input type="checkbox" id="e-late"> Late checkout</label></div></div>
       <div class="form-group"><label>USD / Noche</label><input type="number" id="e-precio" step="0.01"></div>
       <div class="form-group"><label>Plataforma</label>
         <select id="e-plataforma"><option value="Airbnb">Airbnb</option><option value="Directo">Directo</option><option value="Booking">Booking</option><option value="Otro">Otro</option></select>
@@ -923,10 +936,10 @@ function guardarReserva(){
   if(new Date(co)<=new Date(ci)){toast('Check-out debe ser posterior al check-in',false);return;}
   const conf=reservas.find(r=>r.depto===dep&&r.estado!=='Cancelada'&&!(co<=r.checkin||ci>=r.checkout));
   if(conf&&!(ci===conf.checkout||co===conf.checkin)){toast(`Superposición con ${conf.huesped} en ${DN[dep]}`,false);return;}
-  reservas.push({id:uid(),depto:dep,huesped:hue,nac:$('r-nac').value.trim(),checkin:ci,checkout:co,precio:pre,plataforma:$('r-plataforma').value,destino:$('r-destino').value,estado:$('r-estado').value,notas:$('r-notas').value.trim(),creado:new Date().toISOString()});
+  reservas.push({id:uid(),depto:dep,huesped:hue,nac:$('r-nac').value.trim(),checkin:ci,checkout:co,precio:pre,plataforma:$('r-plataforma').value,destino:$('r-destino').value,estado:$('r-estado').value,notas:$('r-notas').value.trim(),early:$('r-early').checked,late:$('r-late').checked,creado:new Date().toISOString()});
   saveToSheets('reservas',reservas);clearReservaForm();toast('Reserva guardada');
 }
-function clearReservaForm(){['r-depto','r-huesped','r-nac','r-checkin','r-checkout','r-precio','r-notas'].forEach(id=>{const e=$(id);if(e)e.value='';});['cp-noches','cp-subtotal','cp-airbnb','cp-neto','cp-gestion','cp-liquido'].forEach(id=>$(id).textContent='—');}
+function clearReservaForm(){['r-depto','r-huesped','r-nac','r-checkin','r-checkout','r-precio','r-notas'].forEach(id=>{const e=$(id);if(e)e.value='';});['r-early','r-late'].forEach(id=>{const e=$(id);if(e)e.checked=false;});['cp-noches','cp-subtotal','cp-airbnb','cp-neto','cp-gestion','cp-liquido'].forEach(id=>$(id).textContent='—');}
 
 // ── RESERVAS ──
 function badgeClass(estado){
@@ -1006,21 +1019,64 @@ function renderCalendario(){
   const parts=[`<div class="cal-grid" style="grid-template-columns:70px repeat(${dim},1fr)">`,`<div class="cal-header cal-header-depto">Depto</div>`];
   for(let d=1;d<=dim;d++){const dow=new Date(anio,mes,d).getDay();parts.push(`<div class="cal-header${dow===0||dow===6?' weekend':''}">${d}</div>`);}
   const byDep={};DEPTOS.forEach(c=>byDep[c]={});
-  reservas.forEach(r=>{if(r.estado==='Cancelada'||!byDep[r.depto])return;const s=new Date(r.checkin),e=new Date(r.checkout);for(let d=new Date(s);d<e;d.setDate(d.getDate()+1)){const k=d.toISOString().split('T')[0];byDep[r.depto][k]=r;}});
+  // Mapear reservas por depto/día — para same-day también necesitamos checkouts
+  const byDepCO={};DEPTOS.forEach(c=>byDepCO[c]={});
+  reservas.forEach(r=>{
+    if(r.estado==='Cancelada'||!byDep[r.depto])return;
+    const s=new Date(r.checkin),e=new Date(r.checkout);
+    for(let d=new Date(s);d<e;d.setDate(d.getDate()+1)){
+      const k=d.toISOString().split('T')[0];
+      byDep[r.depto][k]=r;
+    }
+    // Registrar también el día de checkout para detectar same-day
+    byDepCO[r.depto][r.checkout]=r;
+  });
   DEPTOS.forEach(code=>{
     parts.push(`<div class="cal-depto" style="background:${DC[code]}">${DN[code]}</div>`);
     for(let d=1;d<=dim;d++){
       const ds=`${anio}-${String(mes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      const res=byDep[code][ds];
+      const res=byDep[code][ds];       // reserva que ocupa este día (CI..CO-1)
+      const resOut=byDepCO[code][ds];  // reserva que hace checkout este día
       const bloqInfo=!res&&getBloqueo(code,ds);
       const bloqLabel=bloqInfo?bloqInfo.plat==='Bk'?'Bk':'Air':null;
       const bloqStyle=bloqInfo?bloqInfo.plat==='Bk'?'background:repeating-linear-gradient(45deg,#003580,#003580 4px,#0057b8 4px,#0057b8 8px)':'background:repeating-linear-gradient(45deg,#d68b3f,#d68b3f 4px,#e9a85d 4px,#e9a85d 8px)':null;
-      parts.push(res?`<div class="cal-cell occupied" style="background:${DC[code]};cursor:pointer" onclick="openCalPopup('${res.id}')" title="${esc(res.huesped)}">${esc(res.huesped.split(' ')[0].substr(0,4))}</div>`:bloqInfo?`<div class="cal-cell blocked" style="${bloqStyle}" title="Bloqueado ${bloqInfo.plat==='Bk'?'Booking':'Airbnb'}">${bloqLabel}</div>`:`<div class="cal-cell"></div>`);
+
+      if(res&&resOut&&res.id!==resOut.id){
+        // Same-day: checkout de resOut + checkin de res en el mismo día
+        // Triángulo superior-izq = quien sale, inferior-der = quien entra
+        const nmOut=resOut.huesped.split(' ')[0].substr(0,3);
+        const nmIn=res.huesped.split(' ')[0].substr(0,3);
+        const popOut=`openCalPopup('${resOut.id}')`;
+        const popIn=`openCalPopup('${res.id}')`;
+        parts.push(`<div class="cal-cell split" title="${esc(resOut.huesped)} → ${esc(res.huesped)}">
+          <div class="split-top" style="background:${DC[code]}" onclick="${popOut}">${esc(nmOut)}</div>
+          <div class="split-bot" style="background:${DC[code]}" onclick="${popIn}">${esc(nmIn)}</div>
+          <div class="split-line"></div>
+        </div>`);
+      } else if(res){
+        // Día normal ocupado — verificar si es el día de CI con early, o el día anterior al CO con late
+        const isEarlyDay=res.early&&ds===res.checkin;
+        const isLateDay=res.late&&ds===res.checkout;// no puede pasar (CO excluido del loop), pero por si acaso
+        // Late checkout: el día del checkout no está en byDep, lo mostramos como semi-ocupado
+        const extraClass=(isEarlyDay?' early-ci':'');
+        parts.push(`<div class="cal-cell occupied${extraClass}" style="background:${DC[code]};cursor:pointer" onclick="openCalPopup('${res.id}')" title="${esc(res.huesped)}">${esc(res.huesped.split(' ')[0].substr(0,4))}</div>`);
+      } else if(resOut&&resOut.late){
+        // El día de checkout pero la reserva tiene late checkout → mostrar semi-ocupado
+        parts.push(`<div class="cal-cell occupied late-co" style="background:${DC[code]};cursor:pointer;opacity:0.6" onclick="openCalPopup('${resOut.id}')" title="${esc(resOut.huesped)} (late CO)">${esc(resOut.huesped.split(' ')[0].substr(0,4))}</div>`);
+      } else if(bloqInfo){
+        parts.push(`<div class="cal-cell blocked" style="${bloqStyle}" title="Bloqueado ${bloqInfo.plat==='Bk'?'Booking':'Airbnb'}">${bloqLabel}</div>`);
+      } else {
+        parts.push(`<div class="cal-cell"></div>`);
+      }
     }
   });
   parts.push('</div>');
   $('calendario-grid').innerHTML=parts.join('');
-  $('cal-legend').innerHTML=DEPTOS.map(c=>`<span class="cal-legend-item"><span class="sw" style="background:${DC[c]}"></span>${DN[c]}</span>`).join('')+`<span class="cal-legend-item"><span class="sw" style="background:repeating-linear-gradient(45deg,#d68b3f,#d68b3f 4px,#e9a85d 4px,#e9a85d 8px)"></span>Airbnb</span><span class="cal-legend-item"><span class="sw" style="background:repeating-linear-gradient(45deg,#003580,#003580 4px,#0057b8 4px,#0057b8 8px)"></span>Booking</span><span class="cal-legend-item"><span class="sw" style="background:var(--paper-2);border:1px solid var(--line-2)"></span>Libre</span>`;
+  $('cal-legend').innerHTML=DEPTOS.map(c=>`<span class="cal-legend-item"><span class="sw" style="background:${DC[c]}"></span>${DN[c]}</span>`).join('')
+    +`<span class="cal-legend-item"><span class="sw" style="background:repeating-linear-gradient(45deg,#d68b3f,#d68b3f 4px,#e9a85d 4px,#e9a85d 8px)"></span>Airbnb</span>`
+    +`<span class="cal-legend-item"><span class="sw" style="background:repeating-linear-gradient(45deg,#003580,#003580 4px,#0057b8 4px,#0057b8 8px)"></span>Booking</span>`
+    +`<span class="cal-legend-item"><span class="sw" style="background:linear-gradient(to bottom right,var(--paper-2) 50%,#7a9a6a 50%);border:1px solid var(--line-2)"></span>Día compartido</span>`
+    +`<span class="cal-legend-item"><span class="sw" style="background:var(--paper-2);border:1px solid var(--line-2)"></span>Libre</span>`;
 }
 function openCalPopup(id){
   const r=reservas.find(x=>x.id===id);if(!r)return;
@@ -1032,8 +1088,8 @@ function openCalPopup(id){
   $('cal-popup-body').innerHTML=`
     <div class="cal-popup-field"><div class="cal-popup-label">Depto</div><div class="cal-popup-value"><span class="depto-tag" style="background:${DC[r.depto]}">${DN[r.depto]}</span></div></div>
     <div class="cal-popup-field"><div class="cal-popup-label">Estado</div><div class="cal-popup-value"><span class="badge ${badgeClass(r.estado)}">${r.estado}</span></div></div>
-    <div class="cal-popup-field"><div class="cal-popup-label">Check-in</div><div class="cal-popup-value">${fmtD(r.checkin)}</div></div>
-    <div class="cal-popup-field"><div class="cal-popup-label">Check-out</div><div class="cal-popup-value">${fmtD(r.checkout)}</div></div>
+    <div class="cal-popup-field"><div class="cal-popup-label">Check-in</div><div class="cal-popup-value">${fmtD(r.checkin)}${r.early?' <span style="font-size:0.7rem;color:var(--accent);font-weight:700">Early</span>':''}</div></div>
+    <div class="cal-popup-field"><div class="cal-popup-label">Check-out</div><div class="cal-popup-value">${fmtD(r.checkout)}${r.late?' <span style="font-size:0.7rem;color:var(--accent);font-weight:700">Late</span>':''}</div></div>
     <div class="cal-popup-field"><div class="cal-popup-label">Noches</div><div class="cal-popup-value" style="font-family:'Fraunces',serif;font-size:1.2rem">${c.n}</div></div>
     <div class="cal-popup-field"><div class="cal-popup-label">Plataforma</div><div class="cal-popup-value">${esc(r.plataforma)}</div></div>
     <div class="cal-popup-field"><div class="cal-popup-label">Líquido Prop.</div><div class="cal-popup-value" style="color:var(--ok);font-weight:700">${fmt(c.liq)}</div></div>
@@ -1675,6 +1731,8 @@ function editRes(id){
   $('e-estado').value=r.estado;$('e-checkin').value=r.checkin;$('e-checkout').value=r.checkout;
   $('e-precio').value=r.precio;$('e-plataforma').value=r.plataforma;$('e-notas').value=r.notas||'';
   if($('e-destino'))$('e-destino').value=r.destino||'';
+  if($('e-early'))$('e-early').checked=r.early||false;
+  if($('e-late'))$('e-late').checked=r.late||false;
   $('e-senia').value=r.senia||'';$('e-saldo').value=r.saldo||'';
   const updCalc=()=>{
     const ci=$('e-checkin').value,co=$('e-checkout').value,pre=parseFloat($('e-precio').value)||0,pl=$('e-plataforma').value;
@@ -1705,7 +1763,7 @@ function saveEdit(){
   if(conf&&!(ci===conf.checkout||co===conf.checkin)){toast('Superposición con '+conf.huesped+' en '+DN[dep],false);return;}
   reservas=reservas.map(r=>{
     if(r.id!==editingId)return r;
-    return{...r,depto:dep,huesped:hue,nac:$('e-nac').value.trim(),checkin:ci,checkout:co,precio:pre,plataforma:$('e-plataforma').value,destino:$('e-destino')?$('e-destino').value:'',estado:$('e-estado').value,notas:$('e-notas').value.trim(),senia:parseFloat($('e-senia').value)||0,saldo:parseFloat($('e-saldo').value)||0};
+    return{...r,depto:dep,huesped:hue,nac:$('e-nac').value.trim(),checkin:ci,checkout:co,precio:pre,plataforma:$('e-plataforma').value,destino:$('e-destino')?$('e-destino').value:'',estado:$('e-estado').value,notas:$('e-notas').value.trim(),early:$('e-early')?$('e-early').checked:r.early||false,late:$('e-late')?$('e-late').checked:r.late||false,senia:parseFloat($('e-senia').value)||0,saldo:parseFloat($('e-saldo').value)||0};
   });
   saveToSheets('reservas',reservas);closeEdit();renderReservas();toast('Reserva actualizada');
 }
