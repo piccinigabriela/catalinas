@@ -151,6 +151,29 @@ tbody tr:hover{background:var(--paper-2);}
 tbody td{padding:12px 14px;color:var(--ink);white-space:nowrap;}
 tbody td:first-child{padding-left:22px;}
 tbody td:last-child{padding-right:22px;}
+/* Columnas sticky tabla reservas */
+.res-sticky-1,.res-sticky-2,.res-sticky-3{position:sticky;z-index:2;background:var(--paper);}
+.res-sticky-1{left:0;min-width:36px;}
+.res-sticky-2{left:36px;min-width:52px;}
+.res-sticky-3{left:88px;min-width:140px;border-right:1px solid var(--line-2);}
+tbody tr:hover .res-sticky-1,
+tbody tr:hover .res-sticky-2,
+tbody tr:hover .res-sticky-3{background:var(--paper-2);}
+.total-row .res-sticky-1,.total-row .res-sticky-2,.total-row .res-sticky-3{background:var(--ink)!important;}
+thead .res-sticky-1,thead .res-sticky-2,thead .res-sticky-3{background:var(--paper-2);z-index:3;}
+/* Modal celda calendario */
+.cal-popup{display:none;position:fixed;inset:0;z-index:200;align-items:center;justify-content:center;padding:20px;}
+.cal-popup.show{display:flex;}
+.cal-popup-backdrop{position:absolute;inset:0;background:rgba(26,25,24,0.45);backdrop-filter:blur(2px);}
+.cal-popup-box{position:relative;z-index:1;background:var(--paper);border-radius:var(--r-lg);width:100%;max-width:380px;overflow:hidden;box-shadow:0 20px 60px -10px rgba(26,25,24,0.3);}
+.cal-popup-header{padding:16px 20px;display:flex;align-items:center;gap:12px;}
+.cal-popup-header strong{font-size:1rem;font-weight:600;color:var(--paper);flex:1;}
+.cal-popup-body{padding:0 20px 20px;display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.cal-popup-field{display:flex;flex-direction:column;gap:3px;}
+.cal-popup-label{font-size:0.64rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);font-weight:600;}
+.cal-popup-value{font-size:0.9rem;font-weight:500;color:var(--ink);}
+.cal-popup-footer{padding:14px 20px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end;}
+.cal-popup-close{background:none;border:1px solid var(--line-2);border-radius:var(--r);padding:8px 16px;font-family:inherit;font-size:0.82rem;font-weight:600;color:var(--muted);cursor:pointer;}
 .total-row td{background:var(--ink)!important;color:var(--paper)!important;font-weight:600;}
 
 .badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:0.7rem;font-weight:600;letter-spacing:0.01em;}
@@ -400,7 +423,7 @@ tbody td:last-child{padding-right:22px;}
             <div class="form-group"><label>Huésped</label><input type="text" id="r-huesped" placeholder="Nombre completo"></div>
             <div class="form-group"><label>Nacionalidad</label><input type="text" id="r-nac" placeholder="Ej: Estadounidense"></div>
             <div class="form-group"><label>Estado</label>
-              <select id="r-estado"><option value="Confirmada">Confirmada</option><option value="Pendiente">Pendiente</option><option value="Stand by">Stand by</option><option value="Shown">Shown</option><option value="Non show">Non show</option><option value="Cancelada">Cancelada</option><option value="Cortesía">Cortesía</option></select>
+              <select id="r-estado"><option value="Confirmada">Confirmada</option><option value="Pendiente">Pendiente</option><option value="Stand by">Stand by</option><option value="Shown">Shown</option><option value="Non show">Non show</option><option value="Cancelada">Cancelada</option><option value="Cortesía">Cortesía</option><option value="Devolución">Devolución</option></select>
             </div>
             <div class="form-group"><label>Check-in</label><input type="date" id="r-checkin"></div>
             <div class="form-group"><label>Check-out</label><input type="date" id="r-checkout"></div>
@@ -435,7 +458,7 @@ tbody td:last-child{padding-right:22px;}
           <label>Depto</label>
           <select id="fil-depto"><option value="">Todos</option><option value="D01">PB5</option><option value="D02">1A</option><option value="D03">2C</option><option value="D04">2D</option><option value="D05">PR1</option><option value="D06">PR2</option><option value="D07">1B</option></select>
           <label>Estado</label>
-          <select id="fil-estado"><option value="">Todos</option><option value="Confirmada">Confirmada</option><option value="Pendiente">Pendiente</option><option value="Stand by">Stand by</option><option value="Shown">Shown</option><option value="Non show">Non show</option><option value="Cancelada">Cancelada</option><option value="Cortesía">Cortesía</option></select>
+          <select id="fil-estado"><option value="">Todos</option><option value="Confirmada">Confirmada</option><option value="Pendiente">Pendiente</option><option value="Stand by">Stand by</option><option value="Shown">Shown</option><option value="Non show">Non show</option><option value="Cancelada">Cancelada</option><option value="Cortesía">Cortesía</option><option value="Devolución">Devolución</option></select>
           <input type="text" id="fil-nombre" placeholder="🔍 Buscar huésped..." style="padding:6px 12px;border:1px solid var(--line);border-radius:var(--r);font-size:0.82rem;color:var(--text);background:var(--white);min-width:180px;" oninput="renderReservas()">
           <div class="export-group">
             <button class="btn btn-outline btn-sm" onclick="exportReservas()"><svg><use href="#i-download"/></svg>CSV</button>
@@ -444,7 +467,7 @@ tbody td:last-child{padding-right:22px;}
         </div>
         <div class="card" style="padding:0;overflow:hidden;">
           <div class="table-wrap"><table>
-            <thead><tr><th>#</th><th>Depto</th><th>Huésped</th><th>Check-in</th><th>Check-out</th><th>Noches</th><th>USD/N</th><th>Subtotal</th><th>Airbnb</th><th>Neto</th><th>Gestión</th><th>Líquido</th><th>Estado</th><th>Destino</th><th>Seña</th><th>Saldo</th><th></th></tr></thead>
+            <thead><tr><th class="res-sticky-1">#</th><th class="res-sticky-2">Depto</th><th class="res-sticky-3">Huésped</th><th>Check-in</th><th>Check-out</th><th>Noches</th><th>USD/N</th><th>Subtotal</th><th>Airbnb</th><th>Neto</th><th>Gestión</th><th>Líquido</th><th>Estado</th><th>Destino</th><th>Seña</th><th>Saldo</th><th></th></tr></thead>
             <tbody id="tabla-reservas"></tbody>
           </table></div>
         </div>
@@ -578,7 +601,7 @@ tbody td:last-child{padding-right:22px;}
       <div class="form-group"><label>Huésped</label><input type="text" id="e-huesped"></div>
       <div class="form-group"><label>Nacionalidad</label><input type="text" id="e-nac"></div>
       <div class="form-group"><label>Estado</label>
-        <select id="e-estado"><option value="Confirmada">Confirmada</option><option value="Pendiente">Pendiente</option><option value="Stand by">Stand by</option><option value="Shown">Shown</option><option value="Non show">Non show</option><option value="Cancelada">Cancelada</option><option value="Cortesía">Cortesía</option></select>
+        <select id="e-estado"><option value="Confirmada">Confirmada</option><option value="Pendiente">Pendiente</option><option value="Stand by">Stand by</option><option value="Shown">Shown</option><option value="Non show">Non show</option><option value="Cancelada">Cancelada</option><option value="Cortesía">Cortesía</option><option value="Devolución">Devolución</option></select>
       </div>
       <div class="form-group"><label>Check-in</label><input type="date" id="e-checkin"></div>
       <div class="form-group"><label>Check-out</label><input type="date" id="e-checkout"></div>
@@ -590,6 +613,12 @@ tbody td:last-child{padding-right:22px;}
         <select id="e-destino"><option value="">— Sin especificar —</option><option value="Airbnb">Airbnb</option><option value="Booking">Booking</option><option value="Efectivo">Efectivo</option><option value="Payoneer">Payoneer</option><option value="Billetera virtual">Billetera virtual</option></select>
       </div>
       <div class="form-group full"><label>Notas</label><textarea id="e-notas"></textarea></div>
+      <div id="e-calc-resumen" style="background:var(--ink);border-radius:var(--r);padding:14px 18px;margin-top:4px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;font-size:0.78rem">
+        <div><div style="color:rgba(250,248,243,0.5);font-size:0.64rem;text-transform:uppercase;letter-spacing:0.08em;font-weight:600">Noches</div><div id="e-resumen-noches" style="font-family:'Fraunces',serif;color:var(--paper);font-size:1.1rem;margin-top:4px">—</div></div>
+        <div><div style="color:rgba(250,248,243,0.5);font-size:0.64rem;text-transform:uppercase;letter-spacing:0.08em;font-weight:600">Subtotal</div><div id="e-resumen-sub" style="font-family:'Fraunces',serif;color:var(--paper);font-size:1.1rem;margin-top:4px">—</div></div>
+        <div><div style="color:rgba(250,248,243,0.5);font-size:0.64rem;text-transform:uppercase;letter-spacing:0.08em;font-weight:600">Gestión 12%</div><div id="e-resumen-ges" style="font-family:'Fraunces',serif;color:#f5c97a;font-size:1.1rem;margin-top:4px">—</div></div>
+        <div><div style="color:rgba(250,248,243,0.5);font-size:0.64rem;text-transform:uppercase;letter-spacing:0.08em;font-weight:600">Líquido Prop.</div><div id="e-resumen-liq" style="font-family:'Fraunces',serif;color:#8fbda0;font-size:1.1rem;margin-top:4px">—</div></div>
+      </div>
       <div class="form-group full" style="border-top:1px solid var(--line);padding-top:16px;margin-top:4px;">
         <label style="margin-bottom:10px;display:block">Pagos</label>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
@@ -616,6 +645,18 @@ tbody td:last-child{padding-right:22px;}
       <button class="btn btn-primary" onclick="smartPasteDetect()">Detectar Datos</button>
     </div>
     <div id="sp-detected"></div>
+  </div>
+</div>
+
+<div class="cal-popup" id="cal-popup">
+  <div class="cal-popup-backdrop" onclick="closeCalPopup()"></div>
+  <div class="cal-popup-box">
+    <div class="cal-popup-header" id="cal-popup-header">
+      <strong id="cal-popup-nombre"></strong>
+      <button class="cal-popup-close" onclick="closeCalPopup()" style="background:rgba(255,255,255,0.15);border:none;color:white;border-radius:6px;padding:4px 10px;font-size:0.8rem;cursor:pointer">✕</button>
+    </div>
+    <div class="cal-popup-body" id="cal-popup-body"></div>
+    <div class="cal-popup-footer" id="cal-popup-footer"></div>
   </div>
 </div>
 
@@ -727,7 +768,7 @@ function pinClear(){pb=pb.slice(0,-1);ud();}
 function pinEnter(){
   pins=lo('cn_p',{...DEFAULT_PINS});
   const m=Object.entries(pins).find(([,p])=>p===pb);
-  if(m){cu=m[0];$('login-error').textContent='';loginOk();}
+  if(m){cu=m[0];$('login-error').textContent='';sessionStorage.setItem('cn_cu',cu);loginOk();}
   else{$('login-error').textContent='PIN incorrecto';pb='';ud();setTimeout(()=>$('login-error').textContent='',2000);}
 }
 async function loginOk(){
@@ -751,7 +792,7 @@ async function loginOk(){
   if(cu==='admin'){setTimeout(()=>sincronizarIcal(),2000);}
   checkBackupReminder();
 }
-function logout(){cu=null;pb='';$('app').style.display='none';$('login-screen').style.display='flex';ud();}
+function logout(){cu=null;pb='';sessionStorage.removeItem('cn_cu');$('app').style.display='none';$('login-screen').style.display='flex';ud();}
 
 // ── NAV ──
 function buildNav(){
@@ -894,7 +935,8 @@ function badgeClass(estado){
     estado==='Stand by'?'badge-warn':
     estado==='Shown'?'badge-ok':
     estado==='Non show'?'badge-err':
-    estado==='Cortesía'?'badge-purple':'badge-err';
+    estado==='Cortesía'?'badge-purple':
+    estado==='Devolución'?'badge-err':'badge-err';
 }
 function renderReservas(){
   const ia=cu==='admin',fd=$('fil-depto').value,fe=$('fil-estado').value;
@@ -904,9 +946,9 @@ function renderReservas(){
   if(!data.length){tb.innerHTML=`<tr><td colspan="16" style="text-align:center;padding:40px;color:var(--muted)">Sin reservas</td></tr>`;return;}
   tb.innerHTML=data.map((r,i)=>{const c=calc(r);const senia=r.senia||0,saldo=r.saldo||0,pend=Math.max(0,c.sub-senia-saldo);
     return`<tr>
-      <td style="color:var(--muted);font-weight:600">${i+1}</td>
-      <td><span class="depto-tag" style="background:${DC[r.depto]}">${DN[r.depto]}</span></td>
-      <td style="font-weight:500">${esc(r.huesped)}</td>
+      <td class="res-sticky-1" style="color:var(--muted);font-weight:600">${i+1}</td>
+      <td class="res-sticky-2"><span class="depto-tag" style="background:${DC[r.depto]}">${DN[r.depto]}</span></td>
+      <td class="res-sticky-3" style="font-weight:500">${esc(r.huesped)}</td>
       <td>${fmtD(r.checkin)}</td><td>${fmtD(r.checkout)}</td>
       <td style="text-align:center;font-weight:600">${c.n}</td>
       <td>${fmt(r.precio)}</td><td>${fmt(c.sub)}</td>
@@ -973,13 +1015,37 @@ function renderCalendario(){
       const bloqInfo=!res&&getBloqueo(code,ds);
       const bloqLabel=bloqInfo?bloqInfo.plat==='Bk'?'Bk':'Air':null;
       const bloqStyle=bloqInfo?bloqInfo.plat==='Bk'?'background:repeating-linear-gradient(45deg,#003580,#003580 4px,#0057b8 4px,#0057b8 8px)':'background:repeating-linear-gradient(45deg,#d68b3f,#d68b3f 4px,#e9a85d 4px,#e9a85d 8px)':null;
-      parts.push(res?`<div class="cal-cell occupied" style="background:${DC[code]}" title="${esc(res.huesped)}">${esc(res.huesped.split(' ')[0].substr(0,4))}</div>`:bloqInfo?`<div class="cal-cell blocked" style="${bloqStyle}" title="Bloqueado ${bloqInfo.plat==='Bk'?'Booking':'Airbnb'}">${bloqLabel}</div>`:`<div class="cal-cell"></div>`);
+      parts.push(res?`<div class="cal-cell occupied" style="background:${DC[code]};cursor:pointer" onclick="openCalPopup('${res.id}')" title="${esc(res.huesped)}">${esc(res.huesped.split(' ')[0].substr(0,4))}</div>`:bloqInfo?`<div class="cal-cell blocked" style="${bloqStyle}" title="Bloqueado ${bloqInfo.plat==='Bk'?'Booking':'Airbnb'}">${bloqLabel}</div>`:`<div class="cal-cell"></div>`);
     }
   });
   parts.push('</div>');
   $('calendario-grid').innerHTML=parts.join('');
   $('cal-legend').innerHTML=DEPTOS.map(c=>`<span class="cal-legend-item"><span class="sw" style="background:${DC[c]}"></span>${DN[c]}</span>`).join('')+`<span class="cal-legend-item"><span class="sw" style="background:repeating-linear-gradient(45deg,#d68b3f,#d68b3f 4px,#e9a85d 4px,#e9a85d 8px)"></span>Airbnb</span><span class="cal-legend-item"><span class="sw" style="background:repeating-linear-gradient(45deg,#003580,#003580 4px,#0057b8 4px,#0057b8 8px)"></span>Booking</span><span class="cal-legend-item"><span class="sw" style="background:var(--paper-2);border:1px solid var(--line-2)"></span>Libre</span>`;
 }
+function openCalPopup(id){
+  const r=reservas.find(x=>x.id===id);if(!r)return;
+  const c=calc(r);
+  const pop=$('cal-popup');
+  $('cal-popup-header').style.background=DC[r.depto];
+  $('cal-popup-nombre').textContent=r.huesped+(r.nac?' · '+r.nac:'');
+  const senia=r.senia||0,saldo=r.saldo||0,pend=Math.max(0,c.sub-senia-saldo);
+  $('cal-popup-body').innerHTML=`
+    <div class="cal-popup-field"><div class="cal-popup-label">Depto</div><div class="cal-popup-value"><span class="depto-tag" style="background:${DC[r.depto]}">${DN[r.depto]}</span></div></div>
+    <div class="cal-popup-field"><div class="cal-popup-label">Estado</div><div class="cal-popup-value"><span class="badge ${badgeClass(r.estado)}">${r.estado}</span></div></div>
+    <div class="cal-popup-field"><div class="cal-popup-label">Check-in</div><div class="cal-popup-value">${fmtD(r.checkin)}</div></div>
+    <div class="cal-popup-field"><div class="cal-popup-label">Check-out</div><div class="cal-popup-value">${fmtD(r.checkout)}</div></div>
+    <div class="cal-popup-field"><div class="cal-popup-label">Noches</div><div class="cal-popup-value" style="font-family:'Fraunces',serif;font-size:1.2rem">${c.n}</div></div>
+    <div class="cal-popup-field"><div class="cal-popup-label">Plataforma</div><div class="cal-popup-value">${esc(r.plataforma)}</div></div>
+    <div class="cal-popup-field"><div class="cal-popup-label">Líquido Prop.</div><div class="cal-popup-value" style="color:var(--ok);font-weight:700">${fmt(c.liq)}</div></div>
+    <div class="cal-popup-field"><div class="cal-popup-label">Pendiente</div><div class="cal-popup-value" style="color:${pend>0?'var(--err)':'var(--ok)'};font-weight:600">${pend>0?fmt(pend):'✓ Saldado'}</div></div>
+    ${r.notas?`<div class="cal-popup-field" style="grid-column:1/-1"><div class="cal-popup-label">Notas</div><div class="cal-popup-value" style="font-size:0.84rem;white-space:normal">${esc(r.notas)}</div></div>`:''}
+  `;
+  $('cal-popup-footer').innerHTML=cu==='admin'
+    ?`<button class="cal-popup-close" onclick="closeCalPopup()">Cerrar</button><button class="btn btn-primary btn-sm" onclick="closeCalPopup();editRes('${r.id}')"><svg><use href="#i-edit"/></svg>Editar</button>`
+    :`<button class="cal-popup-close" onclick="closeCalPopup()">Cerrar</button>`;
+  pop.classList.add('show');
+}
+function closeCalPopup(){$('cal-popup').classList.remove('show');}
 function exportOcupacion(){
   const mes=parseInt($('cal-mes').value),anio=parseInt($('cal-anio').value);
   const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -1097,7 +1163,8 @@ function exportGastosPDF(){
 function renderRendimiento(){
   const mv=$('rend-mes').value,ay=parseInt($('rend-anio').value);
   const hm=mv!=='',mes=hm?parseInt(mv):-1;
-  const fil=reservas.filter(r=>{if(r.estado==='Cancelada'||r.estado==='Cortesía')return false;const d=new Date(r.checkin);if(hm&&(d.getMonth()!==mes||d.getFullYear()!==ay))return false;if(!hm&&d.getFullYear()!==ay)return false;return true;});
+  const EXCLUIR_R=['Cancelada','Cortesía','Non show','Stand by','Devolución'];
+  const fil=reservas.filter(r=>{if(EXCLUIR_R.includes(r.estado))return false;const d=new Date(r.checkin);if(hm&&(d.getMonth()!==mes||d.getFullYear()!==ay))return false;if(!hm&&d.getFullYear()!==ay)return false;return true;});
   let ts=0,ta=0,tn=0,tg=0,tl=0,tno=0;
   const rows=DEPTOS.map(code=>{
     const dr=fil.filter(r=>r.depto===code);let s=0,a=0,n=0,g=0,l=0,no=0;
@@ -1145,7 +1212,8 @@ function renderRendimiento(){
 function exportRendimiento(){
   const mv=$('rend-mes').value,ay=parseInt($('rend-anio').value);
   const hm=mv!=='',mes=hm?parseInt(mv):-1;
-  const fil=reservas.filter(r=>{if(r.estado==='Cancelada'||r.estado==='Cortesía')return false;const d=new Date(r.checkin);if(hm&&(d.getMonth()!==mes||d.getFullYear()!==ay))return false;if(!hm&&d.getFullYear()!==ay)return false;return true;});
+  const EXCLUIR_X=['Cancelada','Cortesía','Non show','Stand by','Devolución'];
+  const fil=reservas.filter(r=>{if(EXCLUIR_X.includes(r.estado))return false;const d=new Date(r.checkin);if(hm&&(d.getMonth()!==mes||d.getFullYear()!==ay))return false;if(!hm&&d.getFullYear()!==ay)return false;return true;});
   const h=['Depto','Reservas','Noches','Subtotal','Com.Airbnb','Neto','Com.Gestión','Líquido','Ticket Prom.'];
   const rows=DEPTOS.map(code=>{
     const dr=fil.filter(r=>r.depto===code);let s=0,a=0,n=0,g=0,l=0,no=0;
@@ -1158,7 +1226,8 @@ function exportRendimientoPDF(){
   const mv=$('rend-mes').value,ay=parseInt($('rend-anio').value);
   const hm=mv!=='',mes=hm?parseInt(mv):-1;
   const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  const fil=reservas.filter(r=>{if(r.estado==='Cancelada'||r.estado==='Cortesía')return false;const d=new Date(r.checkin);if(hm&&(d.getMonth()!==mes||d.getFullYear()!==ay))return false;if(!hm&&d.getFullYear()!==ay)return false;return true;});
+  const EXCLUIR_P=['Cancelada','Cortesía','Non show','Stand by','Devolución'];
+  const fil=reservas.filter(r=>{if(EXCLUIR_P.includes(r.estado))return false;const d=new Date(r.checkin);if(hm&&(d.getMonth()!==mes||d.getFullYear()!==ay))return false;if(!hm&&d.getFullYear()!==ay)return false;return true;});
   if(!fil.length){toast('No hay reservas en el período',false);return;}
   let ts=0,ta=0,tn=0,tg=0,tl=0,tno=0;
   const body=DEPTOS.map(code=>{
@@ -1265,7 +1334,8 @@ function renderHoy(){
   const today=new Date().toISOString().split('T')[0];
   const act=reservas.filter(r=>r.estado!=='Cancelada'&&r.checkin<=today&&r.checkout>today);
   const m=new Date().getMonth(),y=new Date().getFullYear();
-  const em=reservas.filter(r=>{const d=new Date(r.checkin);return r.estado!=='Cancelada'&&r.estado!=='Cortesía'&&d.getMonth()===m&&d.getFullYear()===y;});
+  const EXCLUIR_REND=['Cancelada','Cortesía','Non show','Stand by','Devolución'];
+  const em=reservas.filter(r=>{const d=new Date(r.checkin);return !EXCLUIR_REND.includes(r.estado)&&d.getMonth()===m&&d.getFullYear()===y;});
   const ing=em.reduce((s,r)=>s+calc(r).liq,0);
   const nochesM=em.reduce((s,r)=>s+calc(r).n,0);
   const promNoches=em.length?Math.round(nochesM/em.length*10)/10:0;
@@ -1606,12 +1676,23 @@ function editRes(id){
   $('e-precio').value=r.precio;$('e-plataforma').value=r.plataforma;$('e-notas').value=r.notas||'';
   if($('e-destino'))$('e-destino').value=r.destino||'';
   $('e-senia').value=r.senia||'';$('e-saldo').value=r.saldo||'';
-  const upd=()=>{
-    const c=calc(r);const senia=parseFloat($('e-senia').value)||0;const saldo=parseFloat($('e-saldo').value)||0;
-    const total=c.sub;const pend=Math.max(0,total-senia-saldo);
-    $('e-pago-resumen').innerHTML=`Total: <b>${fmt(total)}</b> · Seña: <b>${fmt(senia)}</b> · Saldo abonado: <b>${fmt(saldo)}</b> · <span style="color:${pend>0?'var(--err)':'var(--ok)'}">Pendiente: <b>${fmt(pend)}</b></span>`;
+  const updCalc=()=>{
+    const ci=$('e-checkin').value,co=$('e-checkout').value,pre=parseFloat($('e-precio').value)||0,pl=$('e-plataforma').value;
+    if(ci&&co&&pre&&new Date(co)>new Date(ci)){
+      const c=calc({checkin:ci,checkout:co,precio:pre,plataforma:pl,estado:$('e-estado').value});
+      $('e-resumen-noches').textContent=c.n;
+      $('e-resumen-sub').textContent=fmt(c.sub);
+      $('e-resumen-ges').textContent=fmt(c.ges);
+      $('e-resumen-liq').textContent=fmt(c.liq);
+      const senia=parseFloat($('e-senia').value)||0,saldo=parseFloat($('e-saldo').value)||0;
+      const pend=Math.max(0,c.sub-senia-saldo);
+      $('e-pago-resumen').innerHTML=`Total: <b>${fmt(c.sub)}</b> · Seña: <b>${fmt(senia)}</b> · Saldo: <b>${fmt(saldo)}</b> · <span style="color:${pend>0?'var(--err)':'var(--ok)'}">Pendiente: <b>${fmt(pend)}</b></span>`;
+    } else {
+      ['e-resumen-noches','e-resumen-sub','e-resumen-ges','e-resumen-liq'].forEach(i=>$(i).textContent='—');
+    }
   };
-  $('e-senia').oninput=upd;$('e-saldo').oninput=upd;upd();
+  ['e-checkin','e-checkout','e-precio','e-plataforma','e-estado','e-senia','e-saldo'].forEach(id=>{const el=$(id);if(el)el.oninput=updCalc;});
+  updCalc();
   $('edit-modal').classList.add('show');
 }
 function closeEdit(){$('edit-modal').classList.remove('show');editingId=null;}
@@ -1631,6 +1712,9 @@ function saveEdit(){
 
 // ── EVENT LISTENERS ──
 document.addEventListener('DOMContentLoaded',()=>{
+  // Sesión persistente: si hay usuario en sessionStorage, re-login sin PIN
+  const savedCu=sessionStorage.getItem('cn_cu');
+  if(savedCu&&USER_META[savedCu]){cu=savedCu;loginOk();}
   document.querySelector('.pin-pad').addEventListener('click',e=>{
     const b=e.target.closest('.pin-btn');if(!b)return;
     const v=b.dataset.pin;
