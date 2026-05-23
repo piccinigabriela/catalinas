@@ -1116,7 +1116,8 @@ function renderCalendario(){
         // El día de checkout pero la reserva tiene late checkout → mostrar semi-ocupado
         parts.push(`<div class="cal-cell occupied late-co" style="background:${DC[code]};cursor:pointer;opacity:0.6" onclick="openCalPopup('${resOut.id}')" title="${esc(resOut.huesped)} (late CO)">${esc(resOut.huesped.split(' ')[0].substr(0,4))}</div>`);
       } else if(bloqInfo){
-        parts.push(`<div class="cal-cell blocked" style="${bloqStyle}" title="Bloqueado ${bloqInfo.plat==='Bk'?'Booking':'Airbnb'}">${bloqLabel}</div>`);
+        const platLabel=bloqInfo.plat==='Bk'?'Booking':'Airbnb';
+        parts.push(`<div class="cal-cell blocked" style="${bloqStyle};cursor:pointer" onclick="openBloqPopup('${code}','${ds}')" title="Bloqueado ${platLabel}">${bloqLabel}</div>`);
       } else {
         parts.push(`<div class="cal-cell"></div>`);
       }
@@ -1154,6 +1155,34 @@ function openCalPopup(id){
   pop.classList.add('show');
 }
 function closeCalPopup(){$('cal-popup').classList.remove('show');}
+function openBloqPopup(code,ds){
+  const b=getBloqueo(code,ds);if(!b)return;
+  const platLabel=b.plat==='Bk'?'Booking':'Airbnb';
+  const platColor=b.plat==='Bk'?'#003580':'#d68b3f';
+  const n=Math.max(0,Math.round((new Date(b.end)-new Date(b.start))/86400000));
+  $('cal-popup-header').style.background=platColor;
+  $('cal-popup-nombre').textContent='Bloqueado · '+platLabel;
+  $('cal-popup-body').innerHTML=`
+    <div class="cal-popup-field"><div class="cal-popup-label">Depto</div><div class="cal-popup-value"><span class="depto-tag" style="background:${DC[code]}">${DN[code]}</span></div></div>
+    <div class="cal-popup-field"><div class="cal-popup-label">Plataforma</div><div class="cal-popup-value"><span style="background:${platColor};color:white;padding:2px 8px;border-radius:4px;font-size:0.75rem;font-weight:700">${platLabel}</span></div></div>
+    <div class="cal-popup-field"><div class="cal-popup-label">Desde</div><div class="cal-popup-value">${fmtD(b.start)}</div></div>
+    <div class="cal-popup-field"><div class="cal-popup-label">Hasta</div><div class="cal-popup-value">${fmtD(b.end)}</div></div>
+    <div class="cal-popup-field"><div class="cal-popup-label">Noches</div><div class="cal-popup-value" style="font-family:'Fraunces',serif;font-size:1.2rem">${n}</div></div>
+    <div class="cal-popup-field"><div class="cal-popup-label">Descripción</div><div class="cal-popup-value" style="font-size:0.82rem">${esc(b.summary||'—')}</div></div>
+  `;
+  $('cal-popup-footer').innerHTML=cu==='admin'
+    ?`<button class="cal-popup-close" onclick="closeCalPopup()">Cerrar</button><button class="btn btn-outline btn-sm" onclick="closeCalPopup();eliminarBloqueo('${code}','${b.plat}')" style="color:var(--err);border-color:var(--err)">✕ Eliminar bloqueos ${platLabel}</button>`
+    :`<button class="cal-popup-close" onclick="closeCalPopup()">Cerrar</button>`;
+  $('cal-popup').classList.add('show');
+}
+function eliminarBloqueo(code,plat){
+  if(!confirm('¿Eliminar todos los bloqueos de '+( plat==='Bk'?'Booking':'Airbnb')+' para '+DN[code]+'?'))return;
+  const bloqueos=lo('cn_bloqueos',{});
+  bloqueos[code]=(bloqueos[code]||[]).filter(e=>e.plat!==plat);
+  saveBloqueos(bloqueos);
+  renderCalendario();
+  toast('Bloqueos eliminados ✓');
+}
 function exportOcupacion(){
   const mes=parseInt($('cal-mes').value),anio=parseInt($('cal-anio').value);
   const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
