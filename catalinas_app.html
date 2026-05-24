@@ -739,6 +739,7 @@ const DEPTOS=['D02','D07','D03','D04','D05','D06','D01'];
 const BIN_R='69a97dbcd0ea881f40f19cbb';
 const BIN_G='69a97e5c43b1c97be9b63583';
 const BIN_C='69b019b8ef73d7764564c786';
+const BIN_DISP='6a12d6a86610dd3ae899184c';// Bin público de disponibilidad para web
 const JKEY='$2a$10$PDORfAHzOpsMgSJC0Ka9eO.lfBYtUfz8I91vNnUK7mQf9qxKKrC22';
 const JURL='https://api.jsonbin.io/v3/b/';
 
@@ -796,6 +797,13 @@ async function saveBloqueos(bloqueos){
 async function saveToBin(binId,data){
   sl('cn_'+(binId===BIN_R?'r':'g'),data);
   try{await fetch(JURL+binId,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':JKEY},body:JSON.stringify({data:data})});}catch(err){console.log('JSONBin save error:',err);}
+  // Actualizar bin público de disponibilidad cuando se guardan reservas
+  if(binId===BIN_R){
+    try{
+      const disp=data.map(r=>({depto:r.depto,checkin:r.checkin,checkout:r.checkout,estado:r.estado}));
+      await fetch(JURL+BIN_DISP,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({record:{reservas:disp}})});
+    }catch(err){console.log('JSONBin disp update error:',err);}
+  }
 }
 function saveToSheets(sheet,data){saveToBin(sheet==='reservas'?BIN_R:BIN_G,data);}
 
