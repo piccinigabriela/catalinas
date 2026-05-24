@@ -187,7 +187,52 @@ footer { background: var(--navy); padding: 40px; display: flex; align-items: cen
   </div>
 </div>
 
-<div class="apartments-section">
+<!-- BUSCADOR DE DISPONIBILIDAD -->
+<style>
+.search-section{background:var(--cream);padding:0 0 80px;}
+.search-inner{max-width:1200px;margin:0 auto;padding:0 40px;}
+.search-box{background:var(--white);border:1px solid rgba(26,35,60,0.08);border-radius:4px;padding:40px;box-shadow:0 8px 40px rgba(26,35,60,0.06);}
+.search-title{font-family:'Cormorant Garamond',serif;font-size:1.6rem;font-weight:300;color:var(--navy);margin-bottom:8px;}
+.search-title em{font-style:italic;color:var(--gold);}
+.search-sub{font-size:0.84rem;color:var(--soft);margin-bottom:28px;}
+.search-fields{display:grid;grid-template-columns:1fr 1fr auto;gap:16px;align-items:end;}
+.search-field label{display:block;font-size:0.7rem;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--navy);opacity:0.5;margin-bottom:8px;}
+.search-field input{width:100%;padding:14px 16px;border:1px solid rgba(26,35,60,0.15);border-radius:2px;font-family:'Jost',sans-serif;font-size:0.9rem;color:var(--navy);background:var(--cream);outline:none;transition:border-color 0.2s;}
+.search-field input:focus{border-color:var(--gold);}
+.search-btn{padding:14px 32px;background:var(--gold);color:var(--navy);border:none;border-radius:2px;font-family:'Jost',sans-serif;font-size:0.78rem;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+.search-btn:hover{background:var(--gold2);transform:translateY(-1px);}
+.search-result{margin-top:24px;padding:16px 20px;border-radius:2px;font-size:0.88rem;font-weight:500;display:none;}
+.search-result.loading{background:#f5f2e8;color:var(--soft);display:block;}
+.search-result.error{background:#fdf0ee;color:#c0392b;display:block;}
+@media(max-width:700px){.search-fields{grid-template-columns:1fr 1fr;}.search-btn{grid-column:1/-1;}}
+/* Apt tag dinámico */
+.apt-tag.ocupado{background:rgba(192,57,43,0.12);color:#c0392b;}
+.apt-card.ocupado-card{opacity:0.6;}
+.apt-cta-wa{display:inline-flex;align-items:center;gap:8px;margin-top:16px;padding:10px 20px;background:#25D366;color:white;border-radius:2px;font-family:'Jost',sans-serif;font-size:0.76rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;text-decoration:none;transition:all 0.2s;}
+.apt-cta-wa:hover{background:#1ebe57;transform:translateY(-1px);}
+.apt-cta-wa svg{width:16px;height:16px;fill:white;}
+</style>
+
+<div class="search-section">
+  <div class="search-inner">
+    <div class="search-box fade-in">
+      <div class="search-title" data-es="Verificá <em>disponibilidad</em>" data-en="Check <em>availability</em>">Verificá <em>disponibilidad</em></div>
+      <div class="search-sub" data-es="Ingresá tus fechas y te mostramos qué apartamentos están disponibles" data-en="Enter your dates and we'll show you which apartments are available">Ingresá tus fechas y te mostramos qué apartamentos están disponibles</div>
+      <div class="search-fields">
+        <div class="search-field">
+          <label data-es="Check-in" data-en="Check-in">Check-in</label>
+          <input type="date" id="s-checkin" onchange="clearSearch()">
+        </div>
+        <div class="search-field">
+          <label data-es="Check-out" data-en="Check-out">Check-out</label>
+          <input type="date" id="s-checkout" onchange="clearSearch()">
+        </div>
+        <button class="search-btn" onclick="buscarDisponibilidad()" data-es="Verificar" data-en="Check">Verificar</button>
+      </div>
+      <div class="search-result" id="search-result"></div>
+    </div>
+  </div>
+</div>
   <div class="apartments-inner">
     <div class="section-tag fade-in" data-es="Disponibles" data-en="Available">Disponibles</div>
     <h2 class="section-title fade-in" data-es="Nuestros <em>apartamentos</em>" data-en="Our <em>apartments</em>">Nuestros <em>apartamentos</em></h2>
@@ -324,7 +369,123 @@ footer { background: var(--navy); padding: 40px; display: flex; align-items: cen
 </footer>
 
 <script>
-let currentLang = 'es';
+// ── BUSCADOR DE DISPONIBILIDAD ──
+const JURL='https://api.jsonbin.io/v3/b/';
+const JKEY='$2a$10$3oH8OguO2Vk0mGpKPAEfaOGqDc3G/MnHKEFtxevkE0NeYnU2NfJe6';
+const BIN_R='69a97dbcd0ea881f40f19cbb';
+const BIN_C='69b019b8ef73d7764564c786';
+const DEPTOS_PUB={D01:'1A',D02:'1B',D07:'2C',D09:'2D'};
+const WA='5491140925939';
+
+function fmtFecha(d){if(!d)return'';const p=d.split('-');return`${p[2]}/${p[1]}/${p[0]}`;}
+
+function clearSearch(){
+  document.querySelectorAll('.apt-tag').forEach(t=>{
+    t.classList.remove('ocupado');
+    t.textContent=currentLang==='en'?'Available':'Disponible';
+    t.style.background='';t.style.color='';
+  });
+  document.querySelectorAll('.apt-card').forEach(c=>c.classList.remove('ocupado-card'));
+  document.querySelectorAll('.apt-cta-wa').forEach(b=>b.remove());
+  document.querySelectorAll('.apt-cta').forEach(b=>b.style.display='');
+  document.getElementById('search-result').style.display='none';
+}
+
+async function buscarDisponibilidad(){
+  const ci=document.getElementById('s-checkin').value;
+  const co=document.getElementById('s-checkout').value;
+  const res=document.getElementById('search-result');
+  if(!ci||!co){res.className='search-result error';res.textContent=currentLang==='en'?'Please select both dates.':'Seleccioná ambas fechas.';res.style.display='block';return;}
+  if(co<=ci){res.className='search-result error';res.textContent=currentLang==='en'?'Check-out must be after check-in.':'El check-out debe ser posterior al check-in.';res.style.display='block';return;}
+  res.className='search-result loading';
+  res.textContent=currentLang==='en'?'Checking availability...':'Verificando disponibilidad...';
+  res.style.display='block';
+  try{
+    // Cargar reservas y config (para bloqueos iCal)
+    const [rRes,cRes]=await Promise.all([
+      fetch(JURL+BIN_R+'/latest',{headers:{'X-Master-Key':JKEY,'X-Bin-Meta':'false'}}),
+      fetch(JURL+BIN_C+'/latest',{headers:{'X-Master-Key':JKEY,'X-Bin-Meta':'false'}})
+    ]);
+    const rData=await rRes.json();
+    const cData=await cRes.json();
+    const reservas=rData.record||[];
+    const bloqueos=cData.record?.bloqueos||{};
+
+    // Para cada depto verificar si está ocupado en el rango ci-co
+    const ocupados=new Set();
+    // Reservas
+    reservas.forEach(r=>{
+      if(r.estado==='Cancelada'||r.estado==='Cortesía')return;
+      if(!(co<=r.checkin||ci>=r.checkout))ocupados.add(r.depto);
+    });
+    // Bloqueos iCal (Airbnb + Booking)
+    Object.entries(bloqueos).forEach(([code,events])=>{
+      (events||[]).forEach(e=>{
+        if(!(co<=e.start||ci>=e.end))ocupados.add(code);
+      });
+    });
+
+    // Actualizar UI de cada card
+    const cards=document.querySelectorAll('.apt-card');
+    const deptoKeys=Object.keys(DEPTOS_PUB);
+    let libres=0;
+    cards.forEach((card,i)=>{
+      const code=deptoKeys[i];
+      const nombre=DEPTOS_PUB[code];
+      const tag=card.querySelector('.apt-tag');
+      const ctaOrig=card.querySelector('.apt-cta');
+      // Remover WA buttons previos
+      card.querySelectorAll('.apt-cta-wa').forEach(b=>b.remove());
+      if(ocupados.has(code)){
+        tag.className='apt-tag ocupado';
+        tag.textContent=currentLang==='en'?'Occupied':'Ocupado';
+        card.classList.add('ocupado-card');
+        if(ctaOrig)ctaOrig.style.display='none';
+      } else {
+        tag.className='apt-tag';
+        tag.textContent=currentLang==='en'?'Available':'Disponible';
+        tag.style.background='';tag.style.color='';
+        card.classList.remove('ocupado-card');
+        if(ctaOrig)ctaOrig.style.display='none';
+        // Agregar botón WhatsApp con fechas
+        const msg=encodeURIComponent(`Hola, consulto disponibilidad del apartamento ${nombre} para el ${fmtFecha(ci)} al ${fmtFecha(co)}. ¿Podría darme información?`);
+        const waBtn=document.createElement('a');
+        waBtn.href=`https://wa.me/${WA}?text=${msg}`;
+        waBtn.target='_blank';
+        waBtn.className='apt-cta-wa';
+        waBtn.innerHTML=`<svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>${currentLang==='en'?'Enquire':'Consultar'} →`;
+        const aptBody=card.querySelector('.apt-body');
+        if(aptBody)aptBody.appendChild(waBtn);
+        libres++;
+      }
+    });
+    const noches=Math.round((new Date(co)-new Date(ci))/86400000);
+    if(libres===0){
+      res.className='search-result error';
+      res.textContent=currentLang==='en'?`No apartments available for those dates (${noches} nights). Try other dates or contact us directly.`:`No hay apartamentos disponibles para esas fechas (${noches} noches). Probá otras fechas o consultanos directamente.`;
+    } else {
+      res.className='search-result loading';
+      res.style.background='#e8f5ef';res.style.color='#1a6640';
+      res.textContent=currentLang==='en'?`${libres} apartment${libres>1?'s':''} available for ${noches} nights. Click "Enquire" to contact us.`:`${libres} apartamento${libres>1?'s':''} disponible${libres>1?'s':''} para ${noches} noches. Hacé clic en "Consultar" para escribirnos.`;
+    }
+  }catch(e){
+    res.className='search-result error';
+    res.textContent=currentLang==='en'?'Error checking availability. Please contact us directly.':'Error al verificar disponibilidad. Contactanos directamente.';
+    console.error(e);
+  }
+}
+
+// Setear fechas mínimas
+document.addEventListener('DOMContentLoaded',()=>{
+  const hoy=new Date().toISOString().split('T')[0];
+  document.getElementById('s-checkin').min=hoy;
+  document.getElementById('s-checkout').min=hoy;
+  document.getElementById('s-checkin').addEventListener('change',function(){
+    const co=document.getElementById('s-checkout');
+    if(co.value&&co.value<=this.value)co.value='';
+    co.min=this.value||hoy;
+  });
+});
 function setLang(lang) {
   currentLang = lang;
   document.getElementById('btn-es').classList.toggle('active', lang === 'es');
