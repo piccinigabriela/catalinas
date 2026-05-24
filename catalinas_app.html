@@ -801,7 +801,7 @@ async function saveToBin(binId,data){
   if(binId===BIN_R){
     try{
       const disp=data.map(r=>({depto:r.depto,checkin:r.checkin,checkout:r.checkout,estado:r.estado}));
-      await fetch(JURL+BIN_DISP,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({record:{reservas:disp}})});
+      await fetch(JURL+BIN_DISP,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({reservas:disp})});
     }catch(err){console.log('JSONBin disp update error:',err);}
   }
 }
