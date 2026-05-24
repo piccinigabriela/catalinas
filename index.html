@@ -408,7 +408,7 @@ async function buscarDisponibilidad(){const lang=typeof currentLang!=='undefined
     ]);
     const rData=await rRes.json();
     const cData=await cRes.json();
-    const reservas=rData.record||[];
+    const reservas=(rData.record?.record?.reservas||rData.record?.reservas||[]);
     const bloqueos=cData.record?.bloqueos||{};
 
     // Para cada depto verificar si está ocupado en el rango ci-co
