@@ -397,8 +397,8 @@ async function buscarDisponibilidad(){const lang=typeof currentLang!=='undefined
   try{
     // Cargar reservas y config (para bloqueos iCal)
     const [rRes,cRes]=await Promise.all([
-      fetch(JURL+BIN_R+'/latest',{headers:{'X-Master-Key':JKEY,'X-Bin-Meta':'false'}}),
-      fetch(JURL+BIN_C+'/latest',{headers:{'X-Master-Key':JKEY,'X-Bin-Meta':'false'}})
+      fetch(JURL_D+BIN_DISP+'/latest'),
+      fetch(JURL_D+BIN_CD+'/latest',{headers:{'X-Master-Key':JKEY_D,'X-Bin-Meta':'false'}})
     ]);
     const rData=await rRes.json();
     const cData=await cRes.json();
