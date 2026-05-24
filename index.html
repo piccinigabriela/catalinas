@@ -369,6 +369,12 @@ footer { background: var(--navy); padding: 40px; display: flex; align-items: cen
 </footer>
 
 <script>
+// ── BUSCADOR DE DISPONIBILIDAD — constantes ──
+const JURL_D='https://api.jsonbin.io/v3/b/';
+const JKEY_D='$2a$10$PDORfAHzOpsMgSJC0Ka9eO.lfBYtUfz8I91vNnUK7mQf9qxKKrC22';
+const BIN_DISP='6a12d6a86610dd3ae899184c';
+const BIN_CD='69b019b8ef73d7764564c786';
+const DEPTOS_PUB={D01:'1A',D02:'1B',D07:'2C',D09:'2D'};
 const WA='5491140925939';
 
 function fmtFechaDisp(d){if(!d)return'';const p=d.split('-');return`${p[2]}/${p[1]}/${p[0]}`;}
