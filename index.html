@@ -370,14 +370,13 @@ footer { background: var(--navy); padding: 40px; display: flex; align-items: cen
 
 <script>
 // ── BUSCADOR DE DISPONIBILIDAD ──
-const JURL='https://api.jsonbin.io/v3/b/';
-const JKEY='$2a$10$PDORfAHzOpsMgSJC0Ka9eO.lfBYtUfz8I91vNnUK7mQf9qxKKrC22';
+const JURL_D='https://api.jsonbin.io/v3/b/';
+const JKEY_D='$2a$10$PDORfAHzOpsMgSJC0Ka9eO.lfBYtUfz8I91vNnUK7mQf9qxKKrC22';
 const BIN_DISP='6a12d6a86610dd3ae899184c';// Bin público — sin key necesaria
-const BIN_C='69b019b8ef73d7764564c786';// Config — para bloqueos iCal
+const BIN_CD='69b019b8ef73d7764564c786';// Config — para bloqueos iCal
 const DEPTOS_PUB={D01:'1A',D02:'1B',D07:'2C',D09:'2D'};
-const WA='5491140925939';
 
-function fmtFecha(d){if(!d)return'';const p=d.split('-');return`${p[2]}/${p[1]}/${p[0]}`;}
+function fmtFechaDisp(d){if(!d)return'';const p=d.split('-');return`${p[2]}/${p[1]}/${p[0]}`;}
 
 function clearSearch(){
   document.querySelectorAll('.apt-tag').forEach(t=>{
@@ -402,13 +401,13 @@ async function buscarDisponibilidad(){
   res.style.display='block';
   try{
     // Bin público — sin key
-    const rRes=await fetch(JURL+BIN_DISP+'/latest');
+    const rRes=await fetch(JURL_D+BIN_DISP+'/latest');
     const rData=await rRes.json();
     const reservas=rData.record?.reservas||[];
     // Config — con key para bloqueos iCal
     let bloqueos={};
     try{
-      const cRes=await fetch(JURL+BIN_C+'/latest',{headers:{'X-Master-Key':JKEY,'X-Bin-Meta':'false'}});
+      const cRes=await fetch(JURL_D+BIN_CD+'/latest',{headers:{'X-Master-Key':JKEY_D,'X-Bin-Meta':'false'}});
       const cData=await cRes.json();
       bloqueos=cData.record?.bloqueos||{};
     }catch(e){console.log('No se pudieron cargar bloqueos iCal');}
@@ -444,7 +443,7 @@ async function buscarDisponibilidad(){
         tag.style.background='';tag.style.color='';
         card.classList.remove('ocupado-card');
         if(ctaOrig)ctaOrig.style.display='none';
-        const msg=encodeURIComponent(`Hola, consulto disponibilidad del apartamento ${nombre} para el ${fmtFecha(ci)} al ${fmtFecha(co)}. ¿Podría darme información?`);
+        const msg=encodeURIComponent('Hola, consulto disponibilidad del apartamento '+nombre+' para el '+fmtFechaDisp(ci)+' al '+fmtFechaDisp(co)+'. ¿Podría darme información?');
         const waBtn=document.createElement('a');
         waBtn.href=`https://wa.me/${WA}?text=${msg}`;
         waBtn.target='_blank';
@@ -471,7 +470,7 @@ async function buscarDisponibilidad(){
 }
 const WA='5491140925939';
 
-function fmtFecha(d){if(!d)return'';const p=d.split('-');return`${p[2]}/${p[1]}/${p[0]}`;}
+function fmtFechaDisp(d){if(!d)return'';const p=d.split('-');return`${p[2]}/${p[1]}/${p[0]}`;}
 
 function clearSearch(){
   document.querySelectorAll('.apt-tag').forEach(t=>{
@@ -542,7 +541,7 @@ async function buscarDisponibilidad(){
         card.classList.remove('ocupado-card');
         if(ctaOrig)ctaOrig.style.display='none';
         // Agregar botón WhatsApp con fechas
-        const msg=encodeURIComponent(`Hola, consulto disponibilidad del apartamento ${nombre} para el ${fmtFecha(ci)} al ${fmtFecha(co)}. ¿Podría darme información?`);
+        const msg=encodeURIComponent('Hola, consulto disponibilidad del apartamento '+nombre+' para el '+fmtFechaDisp(ci)+' al '+fmtFechaDisp(co)+'. ¿Podría darme información?');
         const waBtn=document.createElement('a');
         waBtn.href=`https://wa.me/${WA}?text=${msg}`;
         waBtn.target='_blank';
