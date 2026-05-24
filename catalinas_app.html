@@ -1740,7 +1740,7 @@ async function sincronizarIcal(){
           bloqueos[code]=(bloqueos[code]||[]).filter(e=>e.plat!==plat);
           ok++;exito=true;break;
         }
-        const eventos=parseIcal(text).map(e=>({...e,plat}));
+        const eventos=parseIcal(text,plat).map(e=>({...e,plat}));
         bloqueos[code]=(bloqueos[code]||[]).filter(e=>e.plat!==plat).concat(eventos);
         console.log('iCal '+code+' ('+plat+'): '+eventos.length+' eventos');
         ok++;exito=true;break;
@@ -1753,32 +1753,44 @@ async function sincronizarIcal(){
   if(status)status.textContent=`Última sincronización: ${new Date().toLocaleString('es-AR')} · ${ok} OK${err?' · '+err+' error(es)':''}`;
   toast(ok>0?'Calendarios sincronizados ✓':'Error al sincronizar',ok>0);
 }
-function parseIcal(text){
+function parseIcal(text,plat){
   const events=[];
   if(!text||!text.includes('BEGIN:VCALENDAR'))return events;
   const unfolded=text.replace(/\r\n[ \t]/g,'').replace(/\r/g,'');
   const lines=unfolded.split('\n');
-  let inEvent=false,dtstart='',dtend='',summary='';
+  let inEvent=false,dtstart='',dtend='',summary='',status='',uid='';
   for(const line of lines){
-    if(line==='BEGIN:VEVENT'){inEvent=true;dtstart='';dtend='';summary='';}
+    if(line==='BEGIN:VEVENT'){inEvent=true;dtstart='';dtend='';summary='';status='';uid='';}
     else if(line==='END:VEVENT'){
       if(dtstart&&dtend){
         const s=icalDate(dtstart),e=icalDate(dtend);
         const hoy=new Date().toISOString().split('T')[0];
-        // Filtrar eventos pasados, bloqueos automáticos y eventos de un solo día
-        const esBloqueoAuto=summary.toLowerCase().includes('not available')||summary.toLowerCase().includes('no disponible')||summary.toLowerCase().includes('bloqueado');
-        const esUnDia=s===e||(new Date(e)-new Date(s))<=86400000;
-        const esPasado=s<=hoy;
-        if(!esBloqueoAuto&&!esUnDia&&!esPasado)events.push({start:s,end:e,summary});
+        // Ignorar eventos cancelados
+        if(status==='CANCELLED'){inEvent=false;continue;}
+        if(plat==='Air'){
+          // Airbnb: filtrar bloqueos automáticos, eventos de un día y pasados
+          const esBloqueoAuto=summary.toLowerCase().includes('not available')||summary.toLowerCase().includes('no disponible')||summary.toLowerCase().includes('bloqueado');
+          const esUnDia=s===e||(new Date(e)-new Date(s))<=86400000;
+          const esPasado=e<=hoy;
+          if(esBloqueoAuto||esUnDia||esPasado){inEvent=false;continue;}
+        } else {
+          // Booking y otros: solo filtrar completamente pasados
+          if(e<=hoy){inEvent=false;continue;}
+        }
+        events.push({start:s,end:e,summary,uid});
       }
       inEvent=false;
     }
     else if(inEvent){
       const propName=line.split(/[:;]/)[0];
-      const propVal=line.includes(':')?line.substring(line.indexOf(':')+1).split('T')[0]:'';
-      if(propName==='DTSTART')dtstart=propVal;
-      else if(propName==='DTEND')dtend=propVal;
-      else if(propName==='SUMMARY')summary=line.substring(line.indexOf(':')+1);
+      // Booking usa DTSTART;VALUE=DATE:20260725 — tomar solo lo que está después del último ':'
+      const propVal=line.includes(':')?line.substring(line.lastIndexOf(':')+1).trim():'';
+      const propValDate=propVal.split('T')[0];
+      if(propName==='DTSTART')dtstart=propValDate;
+      else if(propName==='DTEND')dtend=propValDate;
+      else if(propName==='SUMMARY')summary=propVal.trim();
+      else if(propName==='STATUS')status=propVal.trim().toUpperCase();
+      else if(propName==='UID')uid=propVal.trim();
     }
   }
   return events;
