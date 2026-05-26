@@ -838,6 +838,8 @@ async function saveBloqueos(bloqueos){sl('cn_bloqueos',bloqueos);}
 
 async function saveToBin(binId,data){
   if(binId==='reservas'||binId===undefined){
+    // Guarda de seguridad: nunca borrar si el array está vacío
+    if(!data||data.length===0){console.log('saveToBin: array vacío, ignorando para evitar pérdida de datos');return;}
     // Guardar en localStorage primero
     sl('cn_r',data);
     reservas=data;
@@ -845,14 +847,12 @@ async function saveToBin(binId,data){
     try{
       // Borrar todas y reinsertar (upsert masivo)
       await fetch(SB_URL+'/rest/v1/reservas?id=neq.NONE',{method:'DELETE',headers:SB_HDR});
-      if(data.length>0){
-        const res=await fetch(SB_URL+'/rest/v1/reservas',{
-          method:'POST',
-          headers:{...SB_HDR,'Prefer':'return=minimal'},
-          body:JSON.stringify(data)
-        });
-        if(!res.ok){const t=await res.text();console.log('Supabase insert error:',t);}
-      }
+      const res=await fetch(SB_URL+'/rest/v1/reservas',{
+        method:'POST',
+        headers:{...SB_HDR,'Prefer':'return=minimal'},
+        body:JSON.stringify(data)
+      });
+      if(!res.ok){const t=await res.text();console.log('Supabase insert error:',t);}
       // Actualizar bin público de disponibilidad
       try{
         const disp=data.map(r=>({depto:r.depto,checkin:r.checkin,checkout:r.checkout,estado:r.estado}));
@@ -1719,8 +1719,8 @@ function restoreBackup(file){
       if(data.ical)sl('cn_ical',data.ical);
       if(data.bloqueos)sl('cn_bloqueos',data.bloqueos);
       if(data.propMap)sl('cn_propMap',data.propMap);
-      await saveToBin(BIN_R,reservas);
-      await saveToBin(BIN_G,gastos);
+      if(data.reservas&&data.reservas.length>0)await saveToBin('reservas',data.reservas);
+      if(data.gastos&&data.gastos.length>0)await saveToBin('gastos',data.gastos);
       if(data.wa||data.ical||data.bloqueos)await saveWaConfig(data.wa||lo('cn_wa',{admin_e:'',mant:''}));
       toast('Backup restaurado');
       setTimeout(()=>location.reload(),1200);
