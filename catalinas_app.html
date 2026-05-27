@@ -836,34 +836,55 @@ async function saveWaConfig(wa){sl('cn_wa',wa);}
 async function saveIcalConfig(ical){sl('cn_ical',ical);}
 async function saveBloqueos(bloqueos){sl('cn_bloqueos',bloqueos);}
 
+// Upsert de una sola reserva (INSERT o UPDATE por id)
+async function upsertReserva(r){
+  try{
+    const res=await fetch(SB_URL+'/rest/v1/reservas',{
+      method:'POST',
+      headers:{...SB_HDR,'Prefer':'resolution=merge-duplicates,return=minimal'},
+      body:JSON.stringify(r)
+    });
+    if(!res.ok){const t=await res.text();console.log('Supabase upsert error:',t);}
+  }catch(err){console.log('Supabase upsert error:',err);}
+}
+// Eliminar una sola reserva remota por id
+async function deleteReservaRemota(id){
+  try{
+    const res=await fetch(SB_URL+'/rest/v1/reservas?id=eq.'+encodeURIComponent(id),{method:'DELETE',headers:SB_HDR});
+    if(!res.ok){const t=await res.text();console.log('Supabase delete error:',t);}
+  }catch(err){console.log('Supabase delete error:',err);}
+}
+// Actualizar bin público de disponibilidad (sin tocar reservas)
+async function updateDispBin(data){
+  try{
+    const disp=data.map(r=>({depto:r.depto,checkin:r.checkin,checkout:r.checkout,estado:r.estado}));
+    await fetch('https://jsonbin-proxy.huuventa.workers.dev/v3/b/'+BIN_DISP,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({reservas:disp})});
+  }catch(err){console.log('BIN_DISP update error:',err);}
+}
+
 async function saveToBin(binId,data){
   if(binId==='reservas'||binId===undefined){
-    // Guarda de seguridad: nunca borrar si el array está vacío
-    if(!data||data.length===0){console.log('saveToBin: array vacío, ignorando para evitar pérdida de datos');return;}
-    // Guardar en localStorage primero
     sl('cn_r',data);
     reservas=data;
-    // Sincronizar con Supabase
-    try{
-      // Borrar todas y reinsertar (upsert masivo)
-      await fetch(SB_URL+'/rest/v1/reservas?id=neq.NONE',{method:'DELETE',headers:SB_HDR});
-      const res=await fetch(SB_URL+'/rest/v1/reservas',{
-        method:'POST',
-        headers:{...SB_HDR,'Prefer':'return=minimal'},
-        body:JSON.stringify(data)
-      });
-      if(!res.ok){const t=await res.text();console.log('Supabase insert error:',t);}
-      // Actualizar bin público de disponibilidad
-      try{
-        const disp=data.map(r=>({depto:r.depto,checkin:r.checkin,checkout:r.checkout,estado:r.estado}));
-        await fetch('https://jsonbin-proxy.huuventa.workers.dev/v3/b/'+BIN_DISP,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({reservas:disp})});
-      }catch(err){console.log('BIN_DISP update error:',err);}
-    }catch(err){console.log('Supabase save error:',err);}
   } else {
     sl('cn_g',data);gastos=data;
   }
 }
 function saveToSheets(sheet,data){saveToBin(sheet==='reservas'?'reservas':'gastos',data);}
+
+// saveOneReserva: upsert individual + actualizar cache local + dispBin
+// Usar en guardarReserva, saveEdit, smartPasteSave, toggleLimpio, importarCSV
+async function saveOneReserva(r){
+  sl('cn_r',reservas);
+  upsertReserva(r);// no await — fire and forget para no bloquear UI
+  updateDispBin(reservas);
+}
+// deleteOneReserva: elimina una reserva remota sin tocar las demás
+async function deleteOneReserva(id){
+  sl('cn_r',reservas);
+  deleteReservaRemota(id);
+  updateDispBin(reservas);
+}
 
 // ── PIN LOGIN ──
 const ud=()=>{for(let i=0;i<4;i++)$('dot-'+i).classList.toggle('filled',i<pb.length);};
@@ -1027,8 +1048,9 @@ function guardarReserva(){
   if(new Date(co)<=new Date(ci)){toast('Check-out debe ser posterior al check-in',false);return;}
   const conf=reservas.find(r=>r.depto===dep&&r.estado!=='Cancelada'&&!(co<=r.checkin||ci>=r.checkout));
   if(conf&&!(ci===conf.checkout||co===conf.checkin)){toast(`Superposición con ${conf.huesped} en ${DN[dep]}`,false);return;}
-  reservas.push({id:uid(),depto:dep,huesped:hue,nac:$('r-nac').value.trim(),checkin:ci,checkout:co,precio:pre,plataforma:$('r-plataforma').value,destino:$('r-destino').value,estado:$('r-estado').value,notas:$('r-notas').value.trim(),early:$('r-early').checked,late:$('r-late').checked,creado:new Date().toISOString()});
-  saveToSheets('reservas',reservas);clearReservaForm();toast('Reserva guardada');
+  const nr={id:uid(),depto:dep,huesped:hue,nac:$('r-nac').value.trim(),checkin:ci,checkout:co,precio:pre,plataforma:$('r-plataforma').value,destino:$('r-destino').value,estado:$('r-estado').value,notas:$('r-notas').value.trim(),early:$('r-early').checked,late:$('r-late').checked,creado:new Date().toISOString()};
+  reservas.push(nr);
+  saveOneReserva(nr);clearReservaForm();toast('Reserva guardada');
 }
 function clearReservaForm(){['r-depto','r-huesped','r-nac','r-checkin','r-checkout','r-precio','r-notas'].forEach(id=>{const e=$(id);if(e)e.value='';});['r-early','r-late'].forEach(id=>{const e=$(id);if(e)e.checked=false;});['cp-noches','cp-subtotal','cp-airbnb','cp-neto','cp-gestion','cp-liquido'].forEach(id=>$(id).textContent='—');}
 
@@ -1067,7 +1089,7 @@ function renderReservas(){
     </tr>`;
   }).join('');
 }
-function delRes(id){if(cu!=='admin')return;if(!confirm('¿Eliminar reserva?'))return;reservas=reservas.filter(r=>r.id!==id);saveToSheets('reservas',reservas);renderReservas();toast('Reserva eliminada');}
+function delRes(id){if(cu!=='admin')return;if(!confirm('¿Eliminar reserva?'))return;reservas=reservas.filter(r=>r.id!==id);deleteOneReserva(id);renderReservas();toast('Reserva eliminada');}
 function exportReservas(){
   const h=['Depto','Huésped','Nacionalidad','Check-in','Check-out','Noches','USD/Noche','Subtotal','Com.Airbnb','Neto','Com.Gestión','Líquido','Estado','Plataforma','Destino cobro','Notas','Seña','Saldo'];
   const rows=reservas.map(r=>{const c=calc(r);return csvRow([DN[r.depto],r.huesped,r.nac||'',r.checkin,r.checkout,c.n,r.precio,c.sub.toFixed(2),c.air.toFixed(2),c.net.toFixed(2),c.ges.toFixed(2),c.liq.toFixed(2),r.estado,r.plataforma,r.destino||'',r.notas||'',r.senia||0,r.saldo||0]);});
@@ -1149,7 +1171,7 @@ function importarCSV(input){
     }
     if(!nuevas.length){toast('Sin reservas válidas en el archivo',false);input.value='';return;}
     const msg=`Importar ${nuevas.length} reservas${errores.length?` (${errores.length} filas ignoradas)`:''}?\n\n¿Agregar a las existentes?`;
-    if(confirm(msg)){reservas=[...reservas,...nuevas];saveToSheets('reservas',reservas);renderReservas();toast(`${nuevas.length} reservas importadas ✓`);}
+    if(confirm(msg)){reservas=[...reservas,...nuevas];sl('cn_r',reservas);nuevas.forEach(r=>upsertReserva(r));updateDispBin(reservas);renderReservas();toast(`${nuevas.length} reservas importadas ✓`);}
     input.value='';
   };
   reader.readAsText(file,'UTF-8');
@@ -1612,7 +1634,7 @@ function toggleLimpio(id){
   if(cu!=='admin')return;
   const r=reservas.find(x=>x.id===id);if(!r)return;
   reservas=reservas.map(x=>x.id===id?{...x,limpio:!x.limpio}:x);
-  saveToSheets('reservas',reservas);
+  const rl=reservas.find(x=>x.id===id);sl('cn_r',reservas);if(rl)saveOneReserva(rl);
   if($('screen-dashboard').classList.contains('active'))renderHoy();
   if($('screen-reservas').classList.contains('active'))renderReservas();
   toast(r.limpio?'Marcado como sucio':'Marcado como limpio');
@@ -1677,10 +1699,11 @@ function smartPasteSave(){
   if(new Date(co)<=new Date(ci)){toast('Check-out debe ser posterior al check-in',false);return;}
   const conf=reservas.find(r=>r.depto===dep&&r.estado!=='Cancelada'&&!(co<=r.checkin||ci>=r.checkout));
   if(conf&&!(ci===conf.checkout||co===conf.checkin)){toast('Superposición con '+conf.huesped+' en '+DN[dep],false);return;}
-  reservas.push({id:uid(),depto:dep,huesped:hue,nac:'',checkin:ci,checkout:co,precio:pre,plataforma:'Airbnb',estado:$('sp-estado').value,notas:$('sp-notas').value.trim(),creado:new Date().toISOString()});
+  const nrs={id:uid(),depto:dep,huesped:hue,nac:'',checkin:ci,checkout:co,precio:pre,plataforma:'Airbnb',estado:$('sp-estado').value,notas:$('sp-notas').value.trim(),creado:new Date().toISOString()};
+  reservas.push(nrs);
   const property=$('sp-property').value;
   if(property){const pm=lo('cn_propMap',{});pm[property]=dep;sl('cn_propMap',pm);}
-  saveToSheets('reservas',reservas);
+  saveOneReserva(nrs);
   closeSmartPaste();
   toast('Reserva guardada');
   if($('screen-reservas').classList.contains('active'))renderReservas();
@@ -1719,7 +1742,7 @@ function restoreBackup(file){
       if(data.ical)sl('cn_ical',data.ical);
       if(data.bloqueos)sl('cn_bloqueos',data.bloqueos);
       if(data.propMap)sl('cn_propMap',data.propMap);
-      if(data.reservas&&data.reservas.length>0)await saveToBin('reservas',data.reservas);
+      if(data.reservas&&data.reservas.length>0){sl('cn_r',data.reservas);for(const r of data.reservas)await upsertReserva(r);await updateDispBin(data.reservas);}
       if(data.gastos&&data.gastos.length>0)await saveToBin('gastos',data.gastos);
       if(data.wa||data.ical||data.bloqueos)await saveWaConfig(data.wa||lo('cn_wa',{admin_e:'',mant:''}));
       toast('Backup restaurado');
@@ -1962,7 +1985,9 @@ function saveEdit(){
     if(r.id!==editingId)return r;
     return{...r,depto:dep,huesped:hue,nac:$('e-nac').value.trim(),checkin:ci,checkout:co,precio:pre,plataforma:$('e-plataforma').value,destino:$('e-destino')?$('e-destino').value:'',estado:$('e-estado').value,notas:$('e-notas').value.trim(),early:$('e-early')?$('e-early').checked:r.early||false,late:$('e-late')?$('e-late').checked:r.late||false,senia:parseFloat($('e-senia').value)||0,saldo:parseFloat($('e-saldo').value)||0};
   });
-  saveToSheets('reservas',reservas);closeEdit();renderReservas();toast('Reserva actualizada');
+  const updated=reservas.find(r=>r.id===editingId);
+  sl('cn_r',reservas);
+  if(updated)saveOneReserva(updated);closeEdit();renderReservas();toast('Reserva actualizada');
 }
 
 // ── EVENT LISTENERS ──
