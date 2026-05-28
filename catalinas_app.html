@@ -1149,7 +1149,7 @@ function renderReservas(){
       <td style="font-size:0.78rem;color:var(--muted)">${r.destino||'—'}</td>
       <td style="font-weight:600;color:var(--ok)">${senia?fmt(senia):'—'}</td>
       <td style="font-weight:600;color:${saldo?(pend<0.01?'var(--ok)':'var(--err)'):'var(--muted)'}">${saldo?fmt(saldo)+(pend<0.01?' ✓':''):'—'}</td>
-      <td>${ia?`<div style="display:flex;gap:6px"><button class="btn-icon-sm" onclick="editRes('${r.id}')" aria-label="Editar"><svg><use href="#i-edit"/></svg></button><button class="btn-icon-sm danger" onclick="delRes('${r.id}')" aria-label="Eliminar"><svg><use href="#i-close"/></svg></button></div>`:''}</td>
+      <td>${ia?`<div style="display:flex;gap:6px"><button class="btn-icon-sm" onclick="editRes('${r.id}')" aria-label="Editar"><svg><use href="#i-edit"/></svg></button><button class="btn-icon-sm danger" onclick="delRes('${r.id}')" aria-label="Eliminar"><svg><use href="#i-close"/></svg></button>${r.tel?`<button class="btn-icon-sm btn-wa" onclick="waMsgHuesped('${r.id}')" title="WhatsApp al huésped" style="background:#128c5e;border-color:#128c5e"><svg><use href="#i-wa"/></svg></button>`:''}</div>`:''}</td>
     </tr>`;
   }).join('');
 }
@@ -1326,7 +1326,7 @@ function openCalPopup(id){
     ${r.notas?`<div class="cal-popup-field" style="grid-column:1/-1"><div class="cal-popup-label">Notas</div><div class="cal-popup-value" style="font-size:0.84rem;white-space:normal">${esc(r.notas)}</div></div>`:''}
   `;
   $('cal-popup-footer').innerHTML=cu==='admin'
-    ?`<button class="cal-popup-close" onclick="closeCalPopup()">Cerrar</button><button class="btn btn-primary btn-sm" onclick="closeCalPopup();editRes('${r.id}')"><svg><use href="#i-edit"/></svg>Editar</button>`
+    ?`<button class="cal-popup-close" onclick="closeCalPopup()">Cerrar</button><button class="btn btn-primary btn-sm" onclick="closeCalPopup();editRes('${r.id}')"><svg><use href="#i-edit"/></svg>Editar</button>${r.tel?`<button class="btn btn-sm btn-wa" onclick="waMsgHuesped('${r.id}')"><svg><use href="#i-wa"/></svg>Huésped</button>`:''}`
     :`<button class="cal-popup-close" onclick="closeCalPopup()">Cerrar</button>`;
   pop.classList.add('show');
 }
@@ -1650,6 +1650,7 @@ function renderAvisos(){
         <div class="wa-btns">
           <button class="btn btn-sm btn-wa" onclick="waMsg('${r.id}','admin_e')"><svg><use href="#i-wa"/></svg>Admin</button>
           <button class="btn btn-sm btn-wa" onclick="waMsg('${r.id}','mant')"><svg><use href="#i-wa"/></svg>Mant.</button>
+          ${r.tel?`<button class="btn btn-sm" style="background:#128c5e;color:white;border-color:#128c5e" onclick="waMsgHuesped('${r.id}')"><svg><use href="#i-wa"/></svg>Huésped</button>`:''}
         </div>
       </div>
     </div>`;
@@ -2088,6 +2089,16 @@ function waMsg(rid,rol){
   const num=wa[rol];
   if(!num){toast('Configurá el número en Config.',false);return;}
   window.open('https://wa.me/'+num.replace(/\D/g,'')+'?text='+encodeURIComponent(msg),'_blank');
+}
+
+function waMsgHuesped(rid){
+  const r=reservas.find(x=>x.id===rid);if(!r){toast('Reserva no encontrada',false);return;}
+  const tel=(r.tel||'').replace(/\D/g,'');
+  if(!tel){toast('Esta reserva no tiene teléfono cargado.',false);return;}
+  const msg='Hola '+r.huesped+', te confirmamos tu reserva en Catalinas Norte.\n'
+    +'Check-in: '+fmtD(r.checkin)+' · Check-out: '+fmtD(r.checkout)+' · Depto: '+DN[r.depto]+'\n'
+    +'Para consultas antes y durante tu estadía: catalinas.checkinn.com.ar/info';
+  window.open('https://wa.me/'+tel+'?text='+encodeURIComponent(msg),'_blank');
 }
 
 // ── EDITAR RESERVA ──
