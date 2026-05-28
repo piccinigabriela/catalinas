@@ -1323,6 +1323,7 @@ function openCalPopup(id){
     <div class="cal-popup-field"><div class="cal-popup-label">Plataforma</div><div class="cal-popup-value">${esc(r.plataforma)}</div></div>
     <div class="cal-popup-field"><div class="cal-popup-label">Líquido Prop.</div><div class="cal-popup-value" style="color:var(--ok);font-weight:700">${fmt(c.liq)}</div></div>
     <div class="cal-popup-field"><div class="cal-popup-label">Pendiente</div><div class="cal-popup-value" style="color:${pend>0?'var(--err)':'var(--ok)'};font-weight:600">${pend>0?fmt(pend):'✓ Saldado'}</div></div>
+    ${r.tel?`<div class="cal-popup-field"><div class="cal-popup-label">Teléfono</div><div class="cal-popup-value" style="font-size:0.84rem">${esc(r.tel)}</div></div>`:''}
     ${r.notas?`<div class="cal-popup-field" style="grid-column:1/-1"><div class="cal-popup-label">Notas</div><div class="cal-popup-value" style="font-size:0.84rem;white-space:normal">${esc(r.notas)}</div></div>`:''}
   `;
   $('cal-popup-footer').innerHTML=cu==='admin'
