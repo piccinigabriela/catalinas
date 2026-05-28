@@ -495,6 +495,7 @@ html.dark .xenia-input{background:var(--paper-3);}
             </div>
             <div class="form-group"><label>Huésped</label><input type="text" id="r-huesped" placeholder="Nombre completo"></div>
             <div class="form-group"><label>Nacionalidad</label><input type="text" id="r-nac" placeholder="Ej: Estadounidense"></div>
+            <div class="form-group"><label>Teléfono</label><input type="tel" id="r-tel" placeholder="Ej: 5491112345678"></div>
             <div class="form-group"><label>Estado</label>
               <select id="r-estado"><option value="Confirmada">Confirmada</option><option value="Pendiente">Pendiente</option><option value="Stand by">Stand by</option><option value="Shown">Shown</option><option value="Non show">Non show</option><option value="Cancelada">Cancelada</option><option value="Cortesía">Cortesía</option><option value="Devolución">Devolución</option></select>
             </div>
@@ -629,6 +630,15 @@ html.dark .xenia-input{background:var(--paper-3);}
         <div id="avisos-list"></div>
       </div>
 
+      <div class="screen" id="screen-huespedes">
+        <div class="section-title">Huéspedes</div>
+        <div class="section-sub">Historial por huésped</div>
+        <div class="filter-row">
+          <input type="text" id="hues-search" placeholder="Buscar huésped..." style="padding:6px 12px;border:1px solid var(--line);border-radius:var(--r);font-size:0.82rem;min-width:220px" oninput="renderHuespedes()">
+        </div>
+        <div id="huespedes-list"></div>
+      </div>
+
       <div class="screen" id="screen-config">
         <div class="section-title">Configuración</div>
         <div class="section-sub">PINs, WhatsApp y backup</div>
@@ -685,6 +695,7 @@ html.dark .xenia-input{background:var(--paper-3);}
       </div>
       <div class="form-group"><label>Huésped</label><input type="text" id="e-huesped"></div>
       <div class="form-group"><label>Nacionalidad</label><input type="text" id="e-nac"></div>
+      <div class="form-group"><label>Teléfono</label><input type="tel" id="e-tel" placeholder="Ej: 5491112345678"></div>
       <div class="form-group"><label>Estado</label>
         <select id="e-estado"><option value="Confirmada">Confirmada</option><option value="Pendiente">Pendiente</option><option value="Stand by">Stand by</option><option value="Shown">Shown</option><option value="Non show">Non show</option><option value="Cancelada">Cancelada</option><option value="Cortesía">Cortesía</option><option value="Devolución">Devolución</option></select>
       </div>
@@ -783,7 +794,7 @@ const USER_META={
   mant:{name:'Mantenimiento',role:'Mantenimiento'}
 };
 const NAV_CONFIG={
-  admin:['dashboard','nueva-reserva','reservas','ocupacion','gastos','rendimiento','avisos','config'],
+  admin:['dashboard','nueva-reserva','reservas','ocupacion','gastos','rendimiento','avisos','huespedes','config'],
   dueno:['ocupacion','gastos','rendimiento'],
   admin_e:['ocupacion','avisos'],
   mant:['avisos']
@@ -796,7 +807,8 @@ const NAV_META={
   'gastos':{icon:'i-receipt',label:'Gastos',sec:'Operaciones'},
   'rendimiento':{icon:'i-trend',label:'Rendimiento',sec:'Reportes'},
   'avisos':{icon:'i-bell',label:'Avisos',sec:'Reportes'},
-  'config':{icon:'i-settings',label:'Config.',sec:'Sistema'}
+  'config':{icon:'i-settings',label:'Config.',sec:'Sistema'},
+  'huespedes':{icon:'i-list',label:'Huéspedes',sec:'Reportes'}
 };
 const MOBILE_NAV={
   admin:['rendimiento','nueva-reserva','ocupacion','avisos','reservas'],
@@ -981,7 +993,7 @@ function showScreen(id){
   const nav=$('nav-'+id);if(nav)nav.classList.add('active');
   const bn=$('bn-'+id);if(bn)bn.classList.add('active');
   $('topbar-title').textContent=NAV_META[id]?.label||id;
-  const R={dashboard:renderHoy,reservas:renderReservas,ocupacion:renderCalendario,gastos:renderGastos,rendimiento:renderRendimiento,avisos:renderAvisos,config:renderConfig};
+  const R={dashboard:renderHoy,reservas:renderReservas,ocupacion:renderCalendario,gastos:renderGastos,rendimiento:renderRendimiento,avisos:renderAvisos,config:renderConfig,huespedes:renderHuespedes};
   if(R[id])R[id]();
   window.scrollTo(0,0);
 }
@@ -1100,11 +1112,11 @@ function guardarReserva(){
   if(new Date(co)<=new Date(ci)){toast('Check-out debe ser posterior al check-in',false);return;}
   const conf=reservas.find(r=>r.depto===dep&&r.estado!=='Cancelada'&&!(co<=r.checkin||ci>=r.checkout));
   if(conf&&!(ci===conf.checkout||co===conf.checkin)){toast(`Superposición con ${conf.huesped} en ${DN[dep]}`,false);return;}
-  const nr={id:uid(),depto:dep,huesped:hue,nac:$('r-nac').value.trim(),checkin:ci,checkout:co,precio:pre,plataforma:$('r-plataforma').value,destino:$('r-destino').value,estado:$('r-estado').value,notas:$('r-notas').value.trim(),early:$('r-early').checked,late:$('r-late').checked,creado:new Date().toISOString()};
+  const nr={id:uid(),depto:dep,huesped:hue,nac:$('r-nac').value.trim(),tel:($('r-tel')?.value.trim()||''),checkin:ci,checkout:co,precio:pre,plataforma:$('r-plataforma').value,destino:$('r-destino').value,estado:$('r-estado').value,notas:$('r-notas').value.trim(),early:$('r-early').checked,late:$('r-late').checked,creado:new Date().toISOString()};
   reservas.push(nr);
   saveOneReserva(nr);clearReservaForm();toast('Reserva guardada');
 }
-function clearReservaForm(){['r-depto','r-huesped','r-nac','r-checkin','r-checkout','r-precio','r-notas'].forEach(id=>{const e=$(id);if(e){e.value='';delete e.dataset.modified;}});['r-early','r-late'].forEach(id=>{const e=$(id);if(e)e.checked=false;});['cp-noches','cp-subtotal','cp-airbnb','cp-neto','cp-gestion','cp-liquido'].forEach(id=>$(id).textContent='—');const b=$('temporada-badge');if(b)b.style.display='none';}
+function clearReservaForm(){['r-depto','r-huesped','r-nac','r-tel','r-checkin','r-checkout','r-precio','r-notas'].forEach(id=>{const e=$(id);if(e){e.value='';delete e.dataset.modified;}});['r-early','r-late'].forEach(id=>{const e=$(id);if(e)e.checked=false;});['cp-noches','cp-subtotal','cp-airbnb','cp-neto','cp-gestion','cp-liquido'].forEach(id=>$(id).textContent='—');const b=$('temporada-badge');if(b)b.style.display='none';}
 
 // ── RESERVAS ──
 function badgeClass(estado){
@@ -2084,7 +2096,7 @@ function editRes(id){
   if(cu!=='admin')return;
   const r=reservas.find(x=>x.id===id);if(!r)return;
   editingId=id;
-  $('e-depto').value=r.depto;$('e-huesped').value=r.huesped;$('e-nac').value=r.nac||'';
+  $('e-depto').value=r.depto;$('e-huesped').value=r.huesped;$('e-nac').value=r.nac||'';if($('e-tel'))$('e-tel').value=r.tel||'';
   $('e-estado').value=r.estado;$('e-checkin').value=r.checkin;$('e-checkout').value=r.checkout;
   $('e-precio').value=r.precio;$('e-plataforma').value=r.plataforma;$('e-notas').value=r.notas||'';
   if($('e-destino'))$('e-destino').value=r.destino||'';
@@ -2120,11 +2132,62 @@ function saveEdit(){
   if(conf&&!(ci===conf.checkout||co===conf.checkin)){toast('Superposición con '+conf.huesped+' en '+DN[dep],false);return;}
   reservas=reservas.map(r=>{
     if(r.id!==editingId)return r;
-    return{...r,depto:dep,huesped:hue,nac:$('e-nac').value.trim(),checkin:ci,checkout:co,precio:pre,plataforma:$('e-plataforma').value,destino:$('e-destino')?$('e-destino').value:'',estado:$('e-estado').value,notas:$('e-notas').value.trim(),early:$('e-early')?$('e-early').checked:r.early||false,late:$('e-late')?$('e-late').checked:r.late||false,senia:parseFloat($('e-senia').value)||0,saldo:parseFloat($('e-saldo').value)||0};
+    return{...r,depto:dep,huesped:hue,nac:$('e-nac').value.trim(),tel:($('e-tel')?.value.trim()||''),checkin:ci,checkout:co,precio:pre,plataforma:$('e-plataforma').value,destino:$('e-destino')?$('e-destino').value:'',estado:$('e-estado').value,notas:$('e-notas').value.trim(),early:$('e-early')?$('e-early').checked:r.early||false,late:$('e-late')?$('e-late').checked:r.late||false,senia:parseFloat($('e-senia').value)||0,saldo:parseFloat($('e-saldo').value)||0};
   });
   const updated=reservas.find(r=>r.id===editingId);
   sl('cn_r',reservas);
   if(updated)saveOneReserva(updated);closeEdit();renderReservas();toast('Reserva actualizada');
+}
+
+// ── HUESPEDES CRM ──
+function renderHuespedes(){
+  const q=($('hues-search')?.value||'').toLowerCase().trim();
+  const map={};
+  reservas.forEach(r=>{
+    if(r.estado==='Cancelada')return;
+    const key=r.huesped.trim().toLowerCase();
+    if(q&&!key.includes(q))return;
+    if(!map[key])map[key]={nombre:r.huesped,tel:r.tel||'',nac:r.nac||'',estadias:[],deptos:new Set()};
+    map[key].estadias.push(r);
+    map[key].deptos.add(r.depto);
+    if(r.tel)map[key].tel=r.tel;
+  });
+  const list=Object.values(map).sort((a,b)=>{
+    const la=a.estadias[a.estadias.length-1]?.checkin||'';
+    const lb=b.estadias[b.estadias.length-1]?.checkin||'';
+    return lb.localeCompare(la);
+  });
+  const cont=$('huespedes-list');
+  if(!list.length){cont.innerHTML='<div class="empty-state"><svg><use href="#i-inbox"/></svg><p>Sin huéspedes</p></div>';return;}
+  cont.innerHTML=list.map(h=>{
+    const sorted=[...h.estadias].sort((a,b)=>b.checkin.localeCompare(a.checkin));
+    const ultima=sorted[0];
+    const deptos=[...h.deptos].map(d=>'<span class="depto-tag" style="background:'+DC[d]+'">'+DN[d]+'</span>').join(' ');
+    const waBtn=h.tel?'<a href="https://wa.me/'+h.tel.replace(/\D/g,'')+'" target="_blank" class="btn btn-sm btn-wa"><svg><use href="#i-wa"/></svg>WhatsApp</a>':'';
+    return'<div class="card" style="padding:18px 22px;margin-bottom:12px">'+
+    '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">'+
+    '<div>'+
+    '<div style="font-weight:700;font-size:0.95rem;color:var(--ink)">'+esc(h.nombre)+'</div>'+
+    (h.nac?'<div style="font-size:0.75rem;color:var(--muted);margin-top:2px">'+esc(h.nac)+'</div>':'')+
+    (h.tel?'<div style="font-size:0.78rem;color:var(--muted);margin-top:2px">☎️ '+esc(h.tel)+'</div>':'')+
+    '</div>'+
+    '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+waBtn+'</div>'+
+    '</div>'+
+    '<div style="margin-top:12px;display:flex;gap:16px;flex-wrap:wrap;font-size:0.8rem;color:var(--muted)">'+
+    '<span><strong style="color:var(--ink)">'+h.estadias.length+'</strong> estadía'+(h.estadias.length!==1?'s':'')+'</span>'+
+    '<span>Deptos: '+deptos+'</span>'+
+    '<span>Última visita: <strong style="color:var(--ink)">'+fmtD(ultima.checkin)+'</strong></span>'+
+    '</div>'+
+    (sorted.length>1?'<details style="margin-top:10px"><summary style="font-size:0.78rem;color:var(--accent);cursor:pointer;font-weight:600">Ver historial</summary>'+
+    '<div style="margin-top:8px;display:flex;flex-direction:column;gap:6px">'+
+    sorted.map(r=>'<div style="font-size:0.78rem;color:var(--muted);display:flex;gap:8px;align-items:center">'+
+    '<span class="depto-tag" style="background:'+DC[r.depto]+';font-size:0.65rem">'+DN[r.depto]+'</span>'+
+    '<span>'+fmtD(r.checkin)+' → '+fmtD(r.checkout)+'</span>'+
+    '<span class="badge '+badgeClass(r.estado)+'">'+r.estado+'</span>'+
+    '</div>').join('')+
+    '</div></details>':'')+
+    '</div>';
+  }).join('');
 }
 
 // ── EVENT LISTENERS ──
