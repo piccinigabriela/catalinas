@@ -498,11 +498,12 @@ html.dark .xenia-input{background:var(--paper-3);}
             <div class="form-group"><label>Estado</label>
               <select id="r-estado"><option value="Confirmada">Confirmada</option><option value="Pendiente">Pendiente</option><option value="Stand by">Stand by</option><option value="Shown">Shown</option><option value="Non show">Non show</option><option value="Cancelada">Cancelada</option><option value="Cortesía">Cortesía</option><option value="Devolución">Devolución</option></select>
             </div>
-            <div class="form-group"><label>Check-in</label><div class="ci-co-group"><input type="date" id="r-checkin"><label class="ci-co-check"><input type="checkbox" id="r-early"> Early check-in</label></div></div>
+            <div class="form-group"><label>Check-in</label><div class="ci-co-group"><input type="date" id="r-checkin" onchange="checkTemporada()"><label class="ci-co-check"><input type="checkbox" id="r-early"> Early check-in</label></div></div>
             <div class="form-group"><label>Check-out</label><div class="ci-co-group"><input type="date" id="r-checkout"><label class="ci-co-check"><input type="checkbox" id="r-late"> Late checkout</label></div></div>
-            <div class="form-group"><label>USD / Noche</label><input type="number" id="r-precio" placeholder="120" step="0.01" min="0"></div>
+            <div class="form-group"><label>USD / Noche</label><input type="number" id="r-precio" placeholder="120" step="0.01" min="0" oninput="this.dataset.modified='1'"></div>
+            <div class="form-group full" style="margin-top:-8px"><span id="temporada-badge" style="display:none;background:var(--accent-soft);color:var(--accent);font-size:0.75rem;font-weight:600;padding:5px 12px;border-radius:20px;border:1px solid rgba(184,131,61,0.3)"></span></div>
             <div class="form-group"><label>Plataforma</label>
-              <select id="r-plataforma" onchange="calcNights()"></select>
+              <select id="r-plataforma" onchange="calcNights();checkTemporada()"></select>
             </div>
             <div class="form-group"><label>Destino del cobro</label>
               <select id="r-destino"><option value="">— Sin especificar —</option><option value="Airbnb">Airbnb</option><option value="Booking">Booking</option><option value="Efectivo">Efectivo</option><option value="Payoneer">Payoneer</option><option value="Billetera virtual">Billetera virtual</option></select>
@@ -651,6 +652,11 @@ html.dark .xenia-input{background:var(--paper-3);}
           <div class="card-title"><div class="dot"></div>Plataformas y Comisiones</div>
           <p style="font-size:0.8rem;color:var(--muted);margin-bottom:18px;line-height:1.6">Configurá las plataformas que usás y sus comisiones. Com.% se descuenta del subtotal. Com.Canal% se activa solo en reservas con estado Shown.</p>
           <div id="plataformas-config-section"></div>
+        </div>
+        <div class="card">
+          <div class="card-title"><div class="dot"></div>Temporadas — Precios Directos</div>
+          <p style="font-size:0.8rem;color:var(--muted);margin-bottom:18px;line-height:1.6">Definí rangos de fechas con precio sugerido para reservas directas. Al cargar una reserva Directa, el sistema detecta la temporada y pre-rellena el precio — podés modificarlo.</p>
+          <div id="temporadas-config-section"></div>
         </div>
         <div class="card">
           <div class="card-title"><div class="dot"></div>Sincronización Airbnb · iCal</div>
@@ -823,6 +829,14 @@ const DEFAULT_PLATAFORMAS=[
 function getPlatformas(){return lo('cn_plataformas',DEFAULT_PLATAFORMAS);}
 function savePlatformas(p){sl('cn_plataformas',p);}
 function getPlatforma(nombre){return getPlatformas().find(p=>p.id===nombre)||{id:nombre,nombre,comision:0,comisionBooking:0};}
+
+// ── TEMPORADAS ──
+function getTemporadas(){return lo('cn_temporadas',[]);}
+function saveTemporadas(t){sl('cn_temporadas',t);}
+function detectarTemporada(fecha){
+  if(!fecha)return null;
+  return getTemporadas().find(t=>t.desde&&t.hasta&&fecha>=t.desde&&fecha<=t.hasta)||null;
+}
 
 // ── DOM CACHE ──
 const $=id=>document.getElementById(id);
@@ -1063,6 +1077,21 @@ function calcNights(){
   $('cp-noches').textContent=c.n;$('cp-subtotal').textContent=fmt(c.sub);$('cp-airbnb').textContent=fmt(c.air);
   $('cp-neto').textContent=fmt(c.net);$('cp-gestion').textContent=fmt(c.ges);$('cp-liquido').textContent=fmt(c.liq);
 }
+function checkTemporada(){
+  const ci=$('r-checkin').value,pl=$('r-plataforma').value;
+  const badge=$('temporada-badge');
+  if(!badge)return;
+  if(pl!=='Directo'){badge.style.display='none';return;}
+  const t=detectarTemporada(ci);
+  if(t){
+    badge.style.display='inline-flex';
+    badge.textContent='📅 '+t.nombre+' — Precio sugerido: USD '+t.precio;
+    const precioInput=$('r-precio');
+    if(precioInput&&!precioInput.dataset.modified){precioInput.value=t.precio;calcNights();}
+  } else {
+    badge.style.display='none';
+  }
+}
 function guardarReserva(){
   const dep=$('r-depto').value,hue=$('r-huesped').value.trim();
   const ci=$('r-checkin').value,co=$('r-checkout').value;
@@ -1075,7 +1104,7 @@ function guardarReserva(){
   reservas.push(nr);
   saveOneReserva(nr);clearReservaForm();toast('Reserva guardada');
 }
-function clearReservaForm(){['r-depto','r-huesped','r-nac','r-checkin','r-checkout','r-precio','r-notas'].forEach(id=>{const e=$(id);if(e)e.value='';});['r-early','r-late'].forEach(id=>{const e=$(id);if(e)e.checked=false;});['cp-noches','cp-subtotal','cp-airbnb','cp-neto','cp-gestion','cp-liquido'].forEach(id=>$(id).textContent='—');}
+function clearReservaForm(){['r-depto','r-huesped','r-nac','r-checkin','r-checkout','r-precio','r-notas'].forEach(id=>{const e=$(id);if(e){e.value='';delete e.dataset.modified;}});['r-early','r-late'].forEach(id=>{const e=$(id);if(e)e.checked=false;});['cp-noches','cp-subtotal','cp-airbnb','cp-neto','cp-gestion','cp-liquido'].forEach(id=>$(id).textContent='—');const b=$('temporada-badge');if(b)b.style.display='none';}
 
 // ── RESERVAS ──
 function badgeClass(estado){
@@ -1935,6 +1964,49 @@ function renderConfig(){
     </div>`;
   updateBackupStatus();
   renderPlatformasConfig();
+  renderTemporadasConfig();
+}
+function renderTemporadasConfig(){
+  const sec=$('temporadas-config-section');if(!sec)return;
+  const temps=getTemporadas();
+  if(!temps.length){
+    sec.innerHTML='<p style="font-size:0.82rem;color:var(--muted);margin-bottom:12px">No hay temporadas configuradas. Agrega una para que el sistema sugiera precios en reservas directas.</p><button class="btn btn-outline btn-sm" onclick="addTemporada()">+ Agregar temporada</button>';
+    return;
+  }
+  sec.innerHTML=temps.map((t,i)=>
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr auto auto;gap:8px;align-items:center;margin-bottom:10px">'+
+    '<div class="form-group" style="margin:0"><label style="font-size:0.68rem">Nombre</label><input type="text" value="'+esc(t.nombre)+'" id="temp-nombre-'+i+'" placeholder="Ej: Alta temporada" style="font-size:0.82rem"></div>'+
+    '<div class="form-group" style="margin:0"><label style="font-size:0.68rem">Desde</label><input type="date" value="'+t.desde+'" id="temp-desde-'+i+'" style="font-size:0.82rem"></div>'+
+    '<div class="form-group" style="margin:0"><label style="font-size:0.68rem">Hasta</label><input type="date" value="'+t.hasta+'" id="temp-hasta-'+i+'" style="font-size:0.82rem"></div>'+
+    '<div class="form-group" style="margin:0"><label style="font-size:0.68rem">USD/Noche</label><input type="number" value="'+t.precio+'" id="temp-precio-'+i+'" min="0" step="1" style="font-size:0.82rem;width:80px"></div>'+
+    '<button class="btn-icon-sm danger" onclick="deleteTemporada('+i+')" title="Eliminar" style="margin-top:18px"><svg><use href="#i-close"/></svg></button>'+
+    '</div>'
+  ).join('')+
+  '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">'+
+  '<button class="btn btn-outline btn-sm" onclick="addTemporada()">+ Agregar temporada</button>'+
+  '<button class="btn btn-primary btn-sm" onclick="guardarTemporadas()">Guardar temporadas</button>'+
+  '</div>'+
+  '<p style="font-size:0.72rem;color:var(--muted);margin-top:8px;line-height:1.6">Solo aplica a reservas <strong>Directas</strong>. El precio es una sugerencia, podes cambiarlo al cargar la reserva.</p>';
+}
+function addTemporada(){
+  const temps=getTemporadas();
+  temps.push({nombre:'Nueva temporada',desde:'',hasta:'',precio:0});
+  saveTemporadas(temps);renderTemporadasConfig();
+}
+function deleteTemporada(i){
+  const temps=getTemporadas();temps.splice(i,1);
+  saveTemporadas(temps);renderTemporadasConfig();
+}
+function guardarTemporadas(){
+  const temps=getTemporadas();
+  temps.forEach((t,i)=>{
+    const n=$('temp-nombre-'+i),d=$('temp-desde-'+i),h=$('temp-hasta-'+i),p=$('temp-precio-'+i);
+    if(n)t.nombre=n.value.trim();
+    if(d)t.desde=d.value;
+    if(h)t.hasta=h.value;
+    if(p)t.precio=parseFloat(p.value)||0;
+  });
+  saveTemporadas(temps);toast('Temporadas guardadas');
 }
 function renderPlatformasConfig(){
   const sec=$('plataformas-config-section');if(!sec)return;
