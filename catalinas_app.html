@@ -502,7 +502,7 @@ html.dark .xenia-input{background:var(--paper-3);}
             <div class="form-group"><label>Check-out</label><div class="ci-co-group"><input type="date" id="r-checkout"><label class="ci-co-check"><input type="checkbox" id="r-late"> Late checkout</label></div></div>
             <div class="form-group"><label>USD / Noche</label><input type="number" id="r-precio" placeholder="120" step="0.01" min="0"></div>
             <div class="form-group"><label>Plataforma</label>
-              <select id="r-plataforma"><option value="Airbnb">Airbnb</option><option value="Directo">Directo</option><option value="Booking">Booking</option><option value="Otro">Otro</option></select>
+              <select id="r-plataforma" onchange="calcNights()"></select>
             </div>
             <div class="form-group"><label>Destino del cobro</label>
               <select id="r-destino"><option value="">— Sin especificar —</option><option value="Airbnb">Airbnb</option><option value="Booking">Booking</option><option value="Efectivo">Efectivo</option><option value="Payoneer">Payoneer</option><option value="Billetera virtual">Billetera virtual</option></select>
@@ -512,7 +512,7 @@ html.dark .xenia-input{background:var(--paper-3);}
           <div class="calc-preview">
             <div class="calc-item"><div class="calc-label">Noches</div><div class="calc-value" id="cp-noches">—</div></div>
             <div class="calc-item"><div class="calc-label">Subtotal</div><div class="calc-value" id="cp-subtotal">—</div></div>
-            <div class="calc-item"><div class="calc-label">Com. Airbnb 3%</div><div class="calc-value" id="cp-airbnb">—</div></div>
+            <div class="calc-item"><div class="calc-label" id="cp-airbnb-label">Com. plataforma</div><div class="calc-value" id="cp-airbnb">—</div></div>
             <div class="calc-item"><div class="calc-label">Neto</div><div class="calc-value" id="cp-neto">—</div></div>
             <div class="calc-item"><div class="calc-label">Com. Gestión 12%</div><div class="calc-value" id="cp-gestion">—</div></div>
             <div class="calc-item"><div class="calc-label">Líquido Prop.</div><div class="calc-value ok" id="cp-liquido">—</div></div>
@@ -648,6 +648,11 @@ html.dark .xenia-input{background:var(--paper-3);}
           <div class="btn-row"><button class="btn btn-primary" onclick="guardarConfig()">Guardar Configuración</button></div>
         </div>
         <div class="card">
+          <div class="card-title"><div class="dot"></div>Plataformas y Comisiones</div>
+          <p style="font-size:0.8rem;color:var(--muted);margin-bottom:18px;line-height:1.6">Configurá las plataformas que usás y sus comisiones. Com.% se descuenta del subtotal. Com.Canal% se activa solo en reservas con estado Shown.</p>
+          <div id="plataformas-config-section"></div>
+        </div>
+        <div class="card">
           <div class="card-title"><div class="dot"></div>Sincronización Airbnb · iCal</div>
           <p style="font-size:0.8rem;color:var(--muted);margin-bottom:18px;line-height:1.6">Pegá el link iCal de cada depto desde Airbnb → Calendario → Conectar con otro sitio web → Copiar enlace.</p>
           <div id="ical-config-section"></div>
@@ -681,7 +686,7 @@ html.dark .xenia-input{background:var(--paper-3);}
       <div class="form-group"><label>Check-out</label><div class="ci-co-group"><input type="date" id="e-checkout"><label class="ci-co-check"><input type="checkbox" id="e-late"> Late checkout</label></div></div>
       <div class="form-group"><label>USD / Noche</label><input type="number" id="e-precio" step="0.01"></div>
       <div class="form-group"><label>Plataforma</label>
-        <select id="e-plataforma"><option value="Airbnb">Airbnb</option><option value="Directo">Directo</option><option value="Booking">Booking</option><option value="Otro">Otro</option></select>
+        <select id="e-plataforma"></select>
         </div>
         <div class="form-group"><label>Destino del cobro</label>
         <select id="e-destino"><option value="">— Sin especificar —</option><option value="Airbnb">Airbnb</option><option value="Booking">Booking</option><option value="Efectivo">Efectivo</option><option value="Payoneer">Payoneer</option><option value="Billetera virtual">Billetera virtual</option></select>
@@ -809,6 +814,16 @@ const sl=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 const sd=(k,v)=>sl(k,v);
 let reservas=[],gastos=[],pins=lo('cn_p',{...DEFAULT_PINS}),cu=null,pb='';
 
+// ── PLATAFORMAS CONFIGURABLES ──
+const DEFAULT_PLATAFORMAS=[
+  {id:'Airbnb',nombre:'Airbnb',comision:3,comisionBooking:0},
+  {id:'Booking',nombre:'Booking',comision:0,comisionBooking:15},
+  {id:'Directo',nombre:'Directo',comision:0,comisionBooking:0},
+];
+function getPlatformas(){return lo('cn_plataformas',DEFAULT_PLATAFORMAS);}
+function savePlatformas(p){sl('cn_plataformas',p);}
+function getPlatforma(nombre){return getPlatformas().find(p=>p.id===nombre)||{id:nombre,nombre,comision:0,comisionBooking:0};}
+
 // ── DOM CACHE ──
 const $=id=>document.getElementById(id);
 const qAll=s=>document.querySelectorAll(s);
@@ -903,7 +918,7 @@ async function loginOk(){
   $('ub-role').textContent=USER_META[cu].role;
   $('mobile-user').textContent=USER_META[cu].name;
   $('mobile-config-btn').style.display=NAV_CONFIG[cu].includes('config')?'flex':'none';
-  buildNav();
+  buildNav();fillPlatformSelects();
   $('topbar-date').textContent=new Date().toLocaleDateString('es-AR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   initSelects();
   const ol=document.createElement('div');
@@ -956,6 +971,11 @@ function showScreen(id){
   if(R[id])R[id]();
   window.scrollTo(0,0);
 }
+function fillPlatformSelects(){
+  const plats=getPlatformas();
+  const opts=plats.map(p=>`<option value="${p.id}">${p.nombre} (${p.comision}%)</option>`).join('');
+  ['r-plataforma','e-plataforma'].forEach(id=>{const s=$(id);if(s){const v=s.value;s.innerHTML=opts;if(v)s.value=v;}});
+}
 function initSelects(){
   const y=new Date().getFullYear();
   ['cal-anio','rend-anio'].forEach(id=>{
@@ -976,12 +996,13 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;"
 function calc(r){
   const n=nights(r.checkin,r.checkout);
   const sub=n*r.precio;
-  const air=r.plataforma==='Airbnb'?sub*0.03:0;
+  const plat=getPlatforma(r.plataforma);
+  const air=sub*(plat.comision/100);
   const net=sub-air;
   const ges=net*0.12;
   const liq=net-ges;
-  // Comisión Booking: 15% sobre líquido, solo si estado=Shown
-  const bkCom=r.plataforma==='Booking'&&r.estado==='Shown'?liq*0.15:0;
+  // Comisión canal: % sobre líquido, solo si estado=Shown
+  const bkCom=plat.comisionBooking>0&&r.estado==='Shown'?liq*(plat.comisionBooking/100):0;
   return{n,sub,air,net,ges,liq,bkCom};
 }
 function toast(msg,ok=true){const t=$('toast');$('toast-msg').textContent=msg;$('toast-icon').firstElementChild.setAttribute('href',ok?'#i-check':'#i-alert');t.classList.toggle('err',!ok);t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
@@ -1036,6 +1057,8 @@ function calcNights(){
   const ci=$('r-checkin').value,co=$('r-checkout').value;
   const p=parseFloat($('r-precio').value)||0,pl=$('r-plataforma').value;
   if(!ci||!co||!p){['cp-noches','cp-subtotal','cp-airbnb','cp-neto','cp-gestion','cp-liquido'].forEach(id=>$(id).textContent='—');return;}
+  const plat=getPlatforma(pl);
+  const lbl=$('cp-airbnb-label');if(lbl)lbl.textContent='Com. '+pl+' '+plat.comision+'%';
   const c=calc({checkin:ci,checkout:co,precio:p,plataforma:pl});
   $('cp-noches').textContent=c.n;$('cp-subtotal').textContent=fmt(c.sub);$('cp-airbnb').textContent=fmt(c.air);
   $('cp-neto').textContent=fmt(c.net);$('cp-gestion').textContent=fmt(c.ges);$('cp-liquido').textContent=fmt(c.liq);
@@ -1911,6 +1934,48 @@ function renderConfig(){
       </div>
     </div>`;
   updateBackupStatus();
+  renderPlatformasConfig();
+}
+function renderPlatformasConfig(){
+  const sec=$('plataformas-config-section');if(!sec)return;
+  const plats=getPlatformas();
+  sec.innerHTML=plats.map((p,i)=>`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+      <input type="text" value="${esc(p.nombre)}" id="plat-nombre-${i}" placeholder="Nombre" style="flex:1;min-width:120px;font-size:0.82rem">
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+        <label style="font-size:0.72rem;color:var(--muted);font-weight:600">Com.%</label>
+        <input type="number" value="${p.comision}" id="plat-com-${i}" min="0" max="100" step="0.1" style="width:70px;font-size:0.82rem">
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+        <label style="font-size:0.72rem;color:var(--muted);font-weight:600">Com.Canal%</label>
+        <input type="number" value="${p.comisionBooking}" id="plat-bk-${i}" min="0" max="100" step="0.1" style="width:70px;font-size:0.82rem">
+      </div>
+      ${plats.length>1?`<button class="btn-icon-sm danger" onclick="deletePlataforma(${i})" title="Eliminar"><svg><use href="#i-close"/></svg></button>`:''}
+    </div>`).join('')+`
+  <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn btn-outline btn-sm" onclick="addPlataforma()">+ Agregar plataforma</button>
+    <button class="btn btn-primary btn-sm" onclick="guardarPlataformas()">Guardar plataformas</button>
+  </div>
+  <p style="font-size:0.72rem;color:var(--muted);margin-top:8px;line-height:1.6">Com.% = comisión que cobra la plataforma sobre el subtotal. Com.Canal% = comisión adicional que se activa solo en estado <strong>Shown</strong>.</p>`;
+}
+function addPlataforma(){
+  const plats=getPlatformas();
+  plats.push({id:'nueva-'+Date.now(),nombre:'Nueva',comision:0,comisionBooking:0});
+  savePlatformas(plats);renderPlatformasConfig();fillPlatformSelects();
+}
+function deletePlataforma(i){
+  const plats=getPlatformas();plats.splice(i,1);
+  savePlatformas(plats);renderPlatformasConfig();fillPlatformSelects();
+}
+function guardarPlataformas(){
+  const plats=getPlatformas();
+  plats.forEach((p,i)=>{
+    const n=$('plat-nombre-'+i);const c=$('plat-com-'+i);const b=$('plat-bk-'+i);
+    if(n){p.nombre=n.value.trim();p.id=p.nombre;}
+    if(c)p.comision=parseFloat(c.value)||0;
+    if(b)p.comisionBooking=parseFloat(b.value)||0;
+  });
+  savePlatformas(plats);fillPlatformSelects();toast('Plataformas guardadas');
 }
 function tp(k){const i=$('pi-'+k);i.type=i.type==='password'?'text':'password';}
 function guardarConfig(){
