@@ -2333,6 +2333,11 @@ CÓMO USAR LA APP — conocimiento específico de CheckInn:
 - Rendimiento: ingresos por mes o año, por depto y plataforma. Exportable a CSV y PDF.
 - Seña y saldo: campos en el formulario para registrar pagos parciales.
 - Early check-in / Late checkout: casillas debajo de las fechas al crear/editar.
+- Teléfono del huésped: campo "Teléfono" en Nueva Reserva y en Editar, debajo de Nacionalidad. Es opcional. Se usa para el botón WhatsApp al huésped y aparece en el CRM.
+- WhatsApp al huésped: botón verde en la tabla de Reservas, en Avisos y en el popup del calendario. Solo aparece si la reserva tiene teléfono cargado. Abre WhatsApp con un mensaje de confirmación pre-armado que incluye check-in, check-out, depto y el link a catalinas.checkinn.com.ar/info.
+- CRM de Huéspedes: sección en el menú (Reportes → Huéspedes). Muestra todos los huéspedes agrupados por nombre con historial de estadías, teléfono y botón WhatsApp directo. Buscador por nombre en tiempo real.
+- Plataformas configurables: en Configuración → Plataformas y Comisiones. Se pueden agregar plataformas nuevas y editar los porcentajes de comisión. Com.% se descuenta del subtotal. Com.Canal% se activa solo en reservas con estado Shown.
+- Tarifas por temporada: en Configuración → Temporadas. Solo aplica a reservas Directas. Al elegir check-in + plataforma Directo, el sistema detecta si cae en una temporada y sugiere el precio automáticamente. El precio es editable.
 
 DATOS DE HOY (${today}):
 - Deptos ocupados ahora: ${act.length} de 7 — ${act.map(r=>DN[r.depto]+'('+r.huesped.split(' ')[0]+')').join(', ')||'ninguno'}
