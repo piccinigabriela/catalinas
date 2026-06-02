@@ -905,9 +905,21 @@ async function updateDispBin(data){
 
 async function saveToBin(binId,data){
   if(binId==='reservas'||binId===undefined){
+    // Guard: no sobreescribir con menos registros que los actuales
+    const current=lo('cn_r',[]);
+    if(Array.isArray(data)&&Array.isArray(current)&&data.length<current.length){
+      console.warn('saveToBin(reservas): bloqueado — intento de guardar '+data.length+' registros sobre '+current.length+' existentes');
+      return;
+    }
     sl('cn_r',data);
     reservas=data;
   } else {
+    // Guard: no sobreescribir gastos con menos registros
+    const currentG=lo('cn_g',[]);
+    if(Array.isArray(data)&&Array.isArray(currentG)&&data.length<currentG.length){
+      console.warn('saveToBin(gastos): bloqueado — intento de guardar '+data.length+' registros sobre '+currentG.length+' existentes');
+      return;
+    }
     sl('cn_g',data);gastos=data;
   }
 }
@@ -1882,7 +1894,9 @@ async function sincronizarIcal(){
   if(!toSync.length){toast('No hay links iCal configurados',false);return;}
   const status=$('ical-status');
   if(status)status.textContent='Sincronizando...';
+  // Backup antes de tocar nada
   const bloqueos=lo('cn_bloqueos',{});
+  const bloqueosBkp=JSON.parse(JSON.stringify(bloqueos));
   let ok=0,err=0;
   const proxies=['https://icalproxy.huuventa.workers.dev/?url='];
   for(const {code,url,plat} of toSync){
@@ -1902,6 +1916,14 @@ async function sincronizarIcal(){
       }catch(e){console.log('iCal error '+code+' '+plat,e);}
     }
     if(!exito)err++;
+  }
+  // Rollback si todos fallaron
+  if(ok===0&&err>0){
+    await saveBloqueos(bloqueosBkp);
+    renderCalendario();
+    if(status)status.textContent='Error al sincronizar — se restauró la versión anterior';
+    toast('Error al sincronizar — calendario sin cambios',false);
+    return;
   }
   await saveBloqueos(bloqueos);
   renderCalendario();
