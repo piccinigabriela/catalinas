@@ -832,6 +832,24 @@ const sl=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 const sd=(k,v)=>sl(k,v);
 let reservas=[],gastos=[],pins=lo('cn_p',{...DEFAULT_PINS}),cu=null,pb='';
 
+// Estados que NO bloquean fechas (paridad con Los Bananos)
+const ESTADOS_LIBRES=['Cancelada','Non show','Devolución'];
+const bloqueaFechas=r=>!ESTADOS_LIBRES.includes(r.estado);
+
+// ── COLA DE SINCRONIZACIÓN PENDIENTE ──
+// Si un upsert/delete a Supabase falla, queda registrado acá y se reintenta al cargar
+const getPending=()=>lo('cn_pending',{up:[],del:[],gup:[],gdel:[]});
+const setPending=p=>sl('cn_pending',p);
+function markPending(tipo,id){const p=getPending();if(!p[tipo].includes(id))p[tipo].push(id);setPending(p);}
+function clearPending(tipo,id){const p=getPending();p[tipo]=p[tipo].filter(x=>x!==id);setPending(p);}
+async function retryPending(){
+  const p=getPending();
+  for(const id of[...p.up]){const r=reservas.find(x=>x.id===id);if(r)await upsertReserva(r);else clearPending('up',id);}
+  for(const id of[...p.del])await deleteReservaRemota(id);
+  for(const id of[...p.gup]){const g=gastos.find(x=>x.id===id);if(g)await upsertGasto(g);else clearPending('gup',id);}
+  for(const id of[...p.gdel])await deleteGastoRemoto(id);
+}
+
 // ── PLATAFORMAS CONFIGURABLES ──
 const DEFAULT_PLATAFORMAS=[
   {id:'Airbnb',nombre:'Airbnb',comision:3,comisionBooking:0},
@@ -855,12 +873,27 @@ const $=id=>document.getElementById(id);
 const qAll=s=>document.querySelectorAll(s);
 
 async function loadFromBins(){
+  // ── Reservas ──
   try{
     const res=await fetch(SB_URL+'/rest/v1/reservas?select=*&order=creado.asc',{headers:SB_HDR});
     if(res.ok){
-      reservas=await res.json();
-      sl('cn_r',reservas);
-      console.log('Supabase: '+reservas.length+' reservas cargadas');
+      let remoto=await res.json();
+      const local=lo('cn_r',[]);
+      if(remoto.length===0&&local.length>0){
+        // Guard: la nube devolvió 0 pero hay datos locales — NO pisar el cache
+        console.warn('Supabase devolvió 0 reservas con '+local.length+' locales — se conserva el cache');
+        toast('⚠️ La nube devolvió 0 reservas. Usando datos locales — revisá Supabase.',false);
+        reservas=local;
+      } else {
+        const p=getPending();
+        // Reincorporar reservas locales pendientes de subir que aún no están en la nube
+        const faltan=local.filter(r=>p.up.includes(r.id)&&!remoto.some(x=>x.id===r.id));
+        // Excluir las marcadas para borrar que la nube todavía tiene
+        remoto=remoto.filter(r=>!p.del.includes(r.id));
+        reservas=remoto.concat(faltan);
+        sl('cn_r',reservas);
+        console.log('Supabase: '+remoto.length+' reservas cargadas'+(faltan.length?' + '+faltan.length+' pendientes locales':''));
+      }
     } else {
       console.log('Supabase error, usando localStorage');
       reservas=lo('cn_r',[]);
@@ -869,7 +902,32 @@ async function loadFromBins(){
     console.log('Supabase no disponible, usando localStorage',e.message);
     reservas=lo('cn_r',[]);
   }
-  gastos=lo('cn_g',[]);
+  // ── Gastos (Supabase con fallback a localStorage) ──
+  try{
+    const res=await fetch(SB_URL+'/rest/v1/gastos_catalinas?select=*&order=fecha.asc',{headers:SB_HDR});
+    if(res.ok){
+      let remoto=await res.json();
+      const local=lo('cn_g',[]);
+      if(remoto.length===0&&local.length>0){
+        // La nube no tiene gastos pero el local sí: migración inicial — subirlos
+        console.log('Migrando '+local.length+' gastos locales a Supabase');
+        gastos=local;
+        local.forEach(g=>upsertGasto(g));
+      } else {
+        const p=getPending();
+        const faltan=local.filter(g=>p.gup.includes(g.id)&&!remoto.some(x=>x.id===g.id));
+        remoto=remoto.filter(g=>!p.gdel.includes(g.id));
+        gastos=remoto.concat(faltan);
+        sl('cn_g',gastos);
+      }
+    } else {
+      gastos=lo('cn_g',[]);
+    }
+  }catch(e){
+    gastos=lo('cn_g',[]);
+  }
+  // Reintentar operaciones pendientes en background
+  retryPending();
   // Config (iCal, WhatsApp, bloqueos) sigue en localStorage
 }
 
@@ -879,21 +937,53 @@ async function saveBloqueos(bloqueos){sl('cn_bloqueos',bloqueos);}
 
 // Upsert de una sola reserva (INSERT o UPDATE por id)
 async function upsertReserva(r){
+  markPending('up',r.id);// se marca antes; se limpia solo si la nube confirma
   try{
     const res=await fetch(SB_URL+'/rest/v1/reservas',{
       method:'POST',
       headers:{...SB_HDR,'Prefer':'resolution=merge-duplicates,return=minimal'},
       body:JSON.stringify(r)
     });
-    if(!res.ok){const t=await res.text();console.log('Supabase upsert error:',t);}
-  }catch(err){console.log('Supabase upsert error:',err);}
+    if(!res.ok){
+      const t=await res.text();console.log('Supabase upsert error:',t);
+      toast('⚠️ No se guardó en la nube. Se reintentará al recargar.',false);
+      return;
+    }
+    clearPending('up',r.id);
+  }catch(err){
+    console.log('Supabase upsert error:',err);
+    toast('⚠️ Sin conexión a la nube. Se reintentará al recargar.',false);
+  }
 }
 // Eliminar una sola reserva remota por id
 async function deleteReservaRemota(id){
+  markPending('del',id);
   try{
     const res=await fetch(SB_URL+'/rest/v1/reservas?id=eq.'+encodeURIComponent(id),{method:'DELETE',headers:SB_HDR});
-    if(!res.ok){const t=await res.text();console.log('Supabase delete error:',t);}
+    if(!res.ok){const t=await res.text();console.log('Supabase delete error:',t);return;}
+    clearPending('del',id);
   }catch(err){console.log('Supabase delete error:',err);}
+}
+// ── Gastos remotos (tabla "gastos" en Supabase) ──
+async function upsertGasto(g){
+  markPending('gup',g.id);
+  try{
+    const res=await fetch(SB_URL+'/rest/v1/gastos_catalinas',{
+      method:'POST',
+      headers:{...SB_HDR,'Prefer':'resolution=merge-duplicates,return=minimal'},
+      body:JSON.stringify(g)
+    });
+    if(!res.ok){const t=await res.text();console.log('Supabase gasto upsert error:',t);return;}
+    clearPending('gup',g.id);
+  }catch(err){console.log('Supabase gasto upsert error:',err);}
+}
+async function deleteGastoRemoto(id){
+  markPending('gdel',id);
+  try{
+    const res=await fetch(SB_URL+'/rest/v1/gastos_catalinas?id=eq.'+encodeURIComponent(id),{method:'DELETE',headers:SB_HDR});
+    if(!res.ok){const t=await res.text();console.log('Supabase gasto delete error:',t);return;}
+    clearPending('gdel',id);
+  }catch(err){console.log('Supabase gasto delete error:',err);}
 }
 // Actualizar bin público de disponibilidad (sin tocar reservas)
 async function updateDispBin(data){
@@ -1122,11 +1212,18 @@ function guardarReserva(){
   const pre=parseFloat($('r-precio').value);
   if(!dep||!hue||!ci||!co||isNaN(pre)){toast('Completá todos los campos obligatorios',false);return;}
   if(new Date(co)<=new Date(ci)){toast('Check-out debe ser posterior al check-in',false);return;}
-  const conf=reservas.find(r=>r.depto===dep&&r.estado!=='Cancelada'&&!(co<=r.checkin||ci>=r.checkout));
+  const conf=reservas.find(r=>r.depto===dep&&bloqueaFechas(r)&&!(co<=r.checkin||ci>=r.checkout));
   if(conf&&!(ci===conf.checkout||co===conf.checkin)){toast(`Superposición con ${conf.huesped} en ${DN[dep]}`,false);return;}
   const nr={id:uid(),depto:dep,huesped:hue,nac:$('r-nac').value.trim(),tel:($('r-tel')?.value.trim()||''),checkin:ci,checkout:co,precio:pre,plataforma:$('r-plataforma').value,destino:$('r-destino').value,estado:$('r-estado').value,notas:$('r-notas').value.trim(),early:$('r-early').checked,late:$('r-late').checked,creado:new Date().toISOString()};
   reservas.push(nr);
-  saveOneReserva(nr);clearReservaForm();toast('Reserva guardada');
+  saveOneReserva(nr);
+  // Eliminar bloqueos iCal que se superpongan con la nueva reserva
+  const bloqueos=lo('cn_bloqueos',{});
+  if(bloqueos[dep]&&bloqueos[dep].length){
+    bloqueos[dep]=bloqueos[dep].filter(b=>!(b.start<co&&b.end>ci));
+    saveBloqueos(bloqueos);
+  }
+  clearReservaForm();toast('Reserva guardada');
 }
 function clearReservaForm(){['r-depto','r-huesped','r-nac','r-tel','r-checkin','r-checkout','r-precio','r-notas'].forEach(id=>{const e=$(id);if(e){e.value='';delete e.dataset.modified;}});['r-early','r-late'].forEach(id=>{const e=$(id);if(e)e.checked=false;});['cp-noches','cp-subtotal','cp-airbnb','cp-neto','cp-gestion','cp-liquido'].forEach(id=>$(id).textContent='—');const b=$('temporada-badge');if(b)b.style.display='none';}
 
@@ -1157,8 +1254,8 @@ function renderReservas(){
       <td style="color:var(--err)">${fmt(c.air)}</td><td>${fmt(c.net)}</td>
       <td style="color:var(--warn)">${fmt(c.ges)}</td>
       <td style="font-weight:700;color:var(--ok)">${fmt(c.liq)}</td>
-      <td><span class="badge ${badgeClass(r.estado)}">${r.estado}</span></td>
-      <td style="font-size:0.78rem;color:var(--muted)">${r.destino||'—'}</td>
+      <td><span class="badge ${badgeClass(r.estado)}">${esc(r.estado)}</span></td>
+      <td style="font-size:0.78rem;color:var(--muted)">${esc(r.destino||'—')}</td>
       <td style="font-weight:600;color:var(--ok)">${senia?fmt(senia):'—'}</td>
       <td style="font-weight:600;color:${saldo?(pend<0.01?'var(--ok)':'var(--err)'):'var(--muted)'}">${saldo?fmt(saldo)+(pend<0.01?' ✓':''):'—'}</td>
       <td>${ia?`<div style="display:flex;gap:6px"><button class="btn-icon-sm" onclick="editRes('${r.id}')" aria-label="Editar"><svg><use href="#i-edit"/></svg></button><button class="btn-icon-sm danger" onclick="delRes('${r.id}')" aria-label="Eliminar"><svg><use href="#i-close"/></svg></button>${r.tel?`<button class="btn-icon-sm btn-wa" onclick="waMsgHuesped('${r.id}')" title="WhatsApp al huésped" style="background:#128c5e;border-color:#128c5e"><svg><use href="#i-wa"/></svg></button>`:''}</div>`:''}</td>
@@ -1202,6 +1299,23 @@ function exportReservasPDF(){
 }
 
 // ── OCUPACIÓN ──
+// Parser CSV que respeta campos entrecomillados (con separador o comillas escapadas adentro)
+function parseCsvLine(line,sep){
+  const out=[];let cur='';let inQ=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(inQ){
+      if(ch==='"'){if(line[i+1]==='"'){cur+='"';i++;}else inQ=false;}
+      else cur+=ch;
+    } else {
+      if(ch==='"'&&cur==='')inQ=true;
+      else if(ch===sep){out.push(cur);cur='';}
+      else cur+=ch;
+    }
+  }
+  out.push(cur);
+  return out.map(c=>c.trim());
+}
 function importarCSV(input){
   const file=input.files[0];if(!file)return;
   const reader=new FileReader();
@@ -1210,7 +1324,7 @@ function importarCSV(input){
     const sep=text.indexOf(';')>text.indexOf(',')&&text.indexOf(';')!==-1?';':',';
     const lines=text.replace(/\r/g,'').split('\n').filter(l=>l.trim()&&!l.startsWith('sep='));
     if(lines.length<2){toast('El archivo no tiene datos',false);return;}
-    const headers=lines[0].split(sep).map(h=>h.replace(/"/g,'').trim().toLowerCase());
+    const headers=parseCsvLine(lines[0],sep).map(h=>h.toLowerCase());
     const col=(names)=>{for(const n of names){const i=headers.findIndex(h=>h.includes(n));if(i>=0)return i;}return -1;};
     const iDepto=col(['depto','departamento','apt','unidad']);
     const iHuesped=col(['huesped','huésped','nombre','guest','pasajero']);
@@ -1227,11 +1341,13 @@ function importarCSV(input){
       if(/^\d{1,2}-\d{1,2}-\d{4}$/.test(s)){const[d,m,y]=s.split('-');return`${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;}
       return s.substring(0,10);
     };
+    const ESTADOS_VALIDOS=['Confirmada','Pendiente','Stand by','Shown','Non show','Cancelada','Cortesía','Devolución'];
+    const normEstado=(s)=>{if(!s)return'Confirmada';const m=ESTADOS_VALIDOS.find(e=>e.toLowerCase()===s.trim().toLowerCase());return m||'Confirmada';};
     const deptoMap={};
     Object.entries(DN).forEach(([k,v])=>{deptoMap[v.toLowerCase()]=k;deptoMap[k.toLowerCase()]=k;});
     const nuevas=[];const errores=[];
     for(let i=1;i<lines.length;i++){
-      const cells=lines[i].split(sep).map(c=>c.replace(/^"|"$/g,'').trim());
+      const cells=parseCsvLine(lines[i],sep);
       const huesped=iHuesped>=0?cells[iHuesped]||'':'';
       const ci=parseDate(iCheckin>=0?cells[iCheckin]:'');
       const co=parseDate(iCheckout>=0?cells[iCheckout]:'');
@@ -1240,7 +1356,7 @@ function importarCSV(input){
       const depto=deptoMap[deptoRaw.toLowerCase()]||DEPTOS[0];
       nuevas.push({id:uid(),depto,huesped,nac:'',checkin:ci,checkout:co,
         precio:iPrecio>=0?parseFloat(cells[iPrecio])||0:0,
-        estado:iEstado>=0?cells[iEstado]||'Confirmada':'Confirmada',
+        estado:normEstado(iEstado>=0?cells[iEstado]:''),
         plataforma:iPlat>=0?cells[iPlat]||'Importado':'Importado',
         notas:iNotas>=0?cells[iNotas]||'':'',
         early:false,late:false,senia:0,saldo:0,creado:new Date().toISOString()});
@@ -1463,12 +1579,22 @@ function guardarGasto(){
   if(cu!=='admin')return;
   const f=$('g-fecha').value,d=$('g-desc').value.trim(),m=parseFloat($('g-monto').value);
   if(!f||!d||!m){toast('Completá fecha, descripción y monto',false);return;}
-  gastos.push({id:uid(),fecha:f,depto:$('g-depto').value,categoria:$('g-categoria').value,descripcion:d,monto:m,comprobante:$('g-comprobante').value.trim()});
-  saveToSheets('gastos',gastos);['g-desc','g-monto','g-comprobante'].forEach(id=>$(id).value='');
+  const ng={id:uid(),fecha:f,depto:$('g-depto').value,categoria:$('g-categoria').value,descripcion:d,monto:m,comprobante:$('g-comprobante').value.trim()};
+  gastos.push(ng);
+  sl('cn_g',gastos);
+  upsertGasto(ng);// fire and forget, con cola de reintento
+  ['g-desc','g-monto','g-comprobante'].forEach(id=>$(id).value='');
   $('g-fecha').value=new Date().toISOString().split('T')[0];
   renderGastos();toast('Gasto registrado');
 }
-function delGas(id){if(cu!=='admin')return;if(!confirm('¿Eliminar?'))return;gastos=gastos.filter(g=>g.id!==id);saveToSheets('gastos',gastos);renderGastos();toast('Eliminado');}
+function delGas(id){
+  if(cu!=='admin')return;if(!confirm('¿Eliminar?'))return;
+  gastos=gastos.filter(g=>g.id!==id);
+  // Escritura directa: el guard de saveToBin bloqueaba las eliminaciones legítimas
+  sl('cn_g',gastos);
+  deleteGastoRemoto(id);
+  renderGastos();toast('Eliminado');
+}
 function exportGastos(){
   const h=['Fecha','Depto','Categoría','Descripción','Monto USD','Comprobante'];
   const rows=gastos.map(g=>csvRow([g.fecha,g.depto==='General'?'General':(DN[g.depto]||g.depto),g.categoria,g.descripcion,g.monto.toFixed(2),g.comprobante||'']));
@@ -1775,7 +1901,7 @@ function smartPasteSave(){
   const pre=parseFloat($('sp-precio').value);
   if(!dep||!hue||!ci||!co||isNaN(pre)){toast('Faltan: depto, huésped, fechas o USD/noche',false);return;}
   if(new Date(co)<=new Date(ci)){toast('Check-out debe ser posterior al check-in',false);return;}
-  const conf=reservas.find(r=>r.depto===dep&&r.estado!=='Cancelada'&&!(co<=r.checkin||ci>=r.checkout));
+  const conf=reservas.find(r=>r.depto===dep&&bloqueaFechas(r)&&!(co<=r.checkin||ci>=r.checkout));
   if(conf&&!(ci===conf.checkout||co===conf.checkin)){toast('Superposición con '+conf.huesped+' en '+DN[dep],false);return;}
   const nrs={id:uid(),depto:dep,huesped:hue,nac:'',checkin:ci,checkout:co,precio:pre,plataforma:'Airbnb',estado:$('sp-estado').value,notas:$('sp-notas').value.trim(),creado:new Date().toISOString()};
   reservas.push(nrs);
@@ -1791,10 +1917,11 @@ function smartPasteSave(){
 // ── BACKUP ──
 function downloadBackup(){
   const data={
-    version:1,fecha:new Date().toISOString(),
+    version:2,fecha:new Date().toISOString(),
     reservas:reservas,gastos:gastos,
     pins:lo('cn_p',DEFAULT_PINS),wa:lo('cn_wa',{admin_e:'',mant:''}),
-    ical:lo('cn_ical',{}),bloqueos:lo('cn_bloqueos',{}),propMap:lo('cn_propMap',{})
+    ical:lo('cn_ical',{}),icalBk:lo('cn_ical_bk',{}),bloqueos:lo('cn_bloqueos',{}),propMap:lo('cn_propMap',{}),
+    plataformas:lo('cn_plataformas',DEFAULT_PLATAFORMAS),temporadas:lo('cn_temporadas',[])
   };
   const json=JSON.stringify(data,null,2);
   const blob=new Blob([json],{type:'application/json'});
@@ -1818,10 +1945,38 @@ function restoreBackup(file){
       if(data.pins)sl('cn_p',data.pins);
       if(data.wa)sl('cn_wa',data.wa);
       if(data.ical)sl('cn_ical',data.ical);
+      if(data.icalBk)sl('cn_ical_bk',data.icalBk);
       if(data.bloqueos)sl('cn_bloqueos',data.bloqueos);
       if(data.propMap)sl('cn_propMap',data.propMap);
-      if(data.reservas&&data.reservas.length>0){sl('cn_r',data.reservas);for(const r of data.reservas)await upsertReserva(r);await updateDispBin(data.reservas);}
-      if(data.gastos&&data.gastos.length>0)await saveToBin('gastos',data.gastos);
+      if(data.plataformas)sl('cn_plataformas',data.plataformas);
+      if(data.temporadas)sl('cn_temporadas',data.temporadas);
+      if(data.reservas&&data.reservas.length>0){
+        sl('cn_r',data.reservas);
+        for(const r of data.reservas)await upsertReserva(r);
+        // Borrar de la nube las reservas que NO están en el backup (restauración completa real)
+        try{
+          const res=await fetch(SB_URL+'/rest/v1/reservas?select=id',{headers:SB_HDR});
+          if(res.ok){
+            const remotas=await res.json();
+            const ids=new Set(data.reservas.map(r=>r.id));
+            for(const x of remotas)if(!ids.has(x.id))await deleteReservaRemota(x.id);
+          }
+        }catch(e){console.log('No se pudieron limpiar reservas huérfanas en la nube:',e);}
+      }
+      if(data.gastos&&data.gastos.length>0){
+        // Escritura directa: restauración explícita confirmada por el usuario
+        sl('cn_g',data.gastos);
+        for(const g of data.gastos)await upsertGasto(g);
+        try{
+          const res=await fetch(SB_URL+'/rest/v1/gastos_catalinas?select=id',{headers:SB_HDR});
+          if(res.ok){
+            const remotos=await res.json();
+            const ids=new Set(data.gastos.map(g=>g.id));
+            for(const x of remotos)if(!ids.has(x.id))await deleteGastoRemoto(x.id);
+          }
+        }catch(e){console.log('No se pudieron limpiar gastos huérfanos en la nube:',e);}
+      }
+      await updateDispBin(data.reservas||[]);
       if(data.wa||data.ical||data.bloqueos)await saveWaConfig(data.wa||lo('cn_wa',{admin_e:'',mant:''}));
       toast('Backup restaurado');
       setTimeout(()=>location.reload(),1200);
@@ -1883,7 +2038,11 @@ function guardarIcal(){
   saveIcalConfig(ical);
   toast('Links iCal guardados');
 }
+let icalSyncing=false;
 async function sincronizarIcal(){
+  if(icalSyncing){console.log('iCal: sync ya en curso, se ignora');return;}
+  icalSyncing=true;
+  try{
   const ical=lo('cn_ical',{});
   const icalBk=lo('cn_ical_bk',{});
   const toSync=[];
@@ -1904,14 +2063,20 @@ async function sincronizarIcal(){
     for(const proxyBase of proxies){
       try{
         const res=await fetch(proxyBase+encodeURIComponent(url));
+        if(!res.ok)throw new Error('HTTP '+res.status);
         const text=await res.text();
         if(!text||!text.includes('BEGIN:VCALENDAR')){
-          bloqueos[code]=(bloqueos[code]||[]).filter(e=>e.plat!==plat);
-          ok++;exito=true;break;
+          // Respuesta inválida del proxy (HTML de error, vacío, etc.):
+          // NO borrar bloqueos — un calendario legítimamente vacío igual trae BEGIN:VCALENDAR
+          throw new Error('Respuesta sin VCALENDAR');
         }
         const eventos=parseIcal(text,plat).map(e=>({...e,plat}));
-        bloqueos[code]=(bloqueos[code]||[]).filter(e=>e.plat!==plat).concat(eventos);
-        console.log('iCal '+code+' ('+plat+'): '+eventos.length+' eventos');
+        // Filtrar eventos que ya tienen reserva activa en esas fechas
+        const eventosFiltrados=eventos.filter(ev=>
+          !reservas.some(r=>r.depto===code&&bloqueaFechas(r)&&r.checkin<ev.end&&r.checkout>ev.start)
+        );
+        bloqueos[code]=(bloqueos[code]||[]).filter(e=>e.plat!==plat).concat(eventosFiltrados);
+        console.log('iCal '+code+' ('+plat+'): '+eventosFiltrados.length+' eventos ('+eventos.length+' recibidos, '+(eventos.length-eventosFiltrados.length)+' ignorados por reserva existente)');
         ok++;exito=true;break;
       }catch(e){console.log('iCal error '+code+' '+plat,e);}
     }
@@ -1929,6 +2094,7 @@ async function sincronizarIcal(){
   renderCalendario();
   if(status)status.textContent=`Última sincronización: ${new Date().toLocaleString('es-AR')} · ${ok} OK${err?' · '+err+' error(es)':''}`;
   toast(ok>0?'Calendarios sincronizados ✓':'Error al sincronizar',ok>0);
+  }finally{icalSyncing=false;}
 }
 function parseIcal(text,plat){
   const events=[];
@@ -2162,7 +2328,7 @@ function saveEdit(){
   const pre=parseFloat($('e-precio').value);const hue=$('e-huesped').value.trim();
   if(!hue||!ci||!co||isNaN(pre)){toast('Completá todos los campos',false);return;}
   if(new Date(co)<=new Date(ci)){toast('Check-out debe ser posterior al check-in',false);return;}
-  const conf=reservas.find(r=>r.id!==editingId&&r.depto===dep&&r.estado!=='Cancelada'&&!(co<=r.checkin||ci>=r.checkout));
+  const conf=reservas.find(r=>r.id!==editingId&&r.depto===dep&&bloqueaFechas(r)&&!(co<=r.checkin||ci>=r.checkout));
   if(conf&&!(ci===conf.checkout||co===conf.checkin)){toast('Superposición con '+conf.huesped+' en '+DN[dep],false);return;}
   reservas=reservas.map(r=>{
     if(r.id!==editingId)return r;
@@ -2217,7 +2383,7 @@ function renderHuespedes(){
     sorted.map(r=>'<div style="font-size:0.78rem;color:var(--muted);display:flex;gap:8px;align-items:center">'+
     '<span class="depto-tag" style="background:'+DC[r.depto]+';font-size:0.65rem">'+DN[r.depto]+'</span>'+
     '<span>'+fmtD(r.checkin)+' → '+fmtD(r.checkout)+'</span>'+
-    '<span class="badge '+badgeClass(r.estado)+'">'+r.estado+'</span>'+
+    '<span class="badge '+badgeClass(r.estado)+'">'+esc(r.estado)+'</span>'+
     '</div>').join('')+
     '</div></details>':'')+
     '</div>';
@@ -2284,7 +2450,7 @@ function toggleXenia(){
     if(!cu){
       xeniaAddMsg('bot','¡Hola! Soy Xenia 🌿\nPara poder ayudarte con los datos de tu propiedad, primero ingresá tu PIN. ¡Te espero!');
     } else if(!reservas||!reservas.length){
-      xeniaAddMsg('bot','¡Hola! Soy Xenia 🌿\nHoy es '+today+'. Estoy cargando los datos de '+' Deptos de Catalinas Norte, CABA'+'... Dame un segundo y preguntame lo que necesitás 😊');
+      xeniaAddMsg('bot','¡Hola! Soy Xenia 🌿\nHoy es '+today+'. Estoy cargando los datos de los 7 deptos de Catalinas Norte, CABA... Dame un segundo y preguntame lo que necesitás 😊');
     } else {
       xeniaAddMsg('bot','¡Hola! Soy Xenia, tu asistente de hospitalidad 🌿\nHoy es '+today+'. ¿En qué te puedo ayudar?');
     }
