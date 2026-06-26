@@ -152,7 +152,7 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
 .btn-row{display:flex;gap:10px;margin-top:22px;justify-content:flex-end;flex-wrap:wrap;}
 
 .table-wrap{overflow-x:auto;}
-.table-scroll-mirror{overflow-x:auto;overflow-y:hidden;height:12px;position:sticky;bottom:0;z-index:10;background:var(--surface);border-top:1px solid var(--line-1);}
+.table-scroll-mirror{overflow-x:auto;overflow-y:hidden;height:14px;position:fixed;bottom:0;left:0;right:0;z-index:50;background:var(--surface);border-top:2px solid var(--line-1);display:none;}
 .table-scroll-mirror-inner{height:1px;}
 table{width:100%;border-collapse:collapse;font-size:0.83rem;}
 thead tr{border-bottom:1px solid var(--line-2);}
@@ -1271,7 +1271,7 @@ function renderReservas(){
       <td style="font-size:0.78rem;color:var(--muted)">${esc(r.destino||'—')}</td>
       <td style="font-weight:600;color:var(--ok)">${senia?fmt(senia):'—'}</td>
       <td style="font-weight:600;color:${saldo?(pend<0.01?'var(--ok)':'var(--err)'):'var(--muted)'}">${saldo?fmt(saldo)+(pend<0.01?' ✓':''):'—'}</td>
-      <td>${ia?`<div style="display:flex;gap:6px"><button class="btn-icon-sm" onclick="abrirFichaRes('${r.id}')" title="Ver ficha" style="background:var(--accent-muted,#e8f0ec);border-color:var(--accent)"><svg><use href="#i-info"/></svg></button><button class="btn-icon-sm" onclick="editRes('${r.id}')" aria-label="Editar"><svg><use href="#i-edit"/></svg></button><button class="btn-icon-sm danger" onclick="delRes('${r.id}')" aria-label="Eliminar"><svg><use href="#i-close"/></svg></button>${r.tel?`<button class="btn-icon-sm btn-wa" onclick="waMsgHuesped('${r.id}')" title="WhatsApp al huésped" style="background:#128c5e;border-color:#128c5e"><svg><use href="#i-wa"/></svg></button>`:''}</div>`:''}</td>
+      <td>${ia?`<div style="display:flex;gap:6px"><button class="btn btn-outline btn-sm" onclick="abrirFichaRes('${r.id}')" title="Ver ficha" style="padding:3px 7px;font-size:11px">📋</button><button class="btn-icon-sm" onclick="editRes('${r.id}')" aria-label="Editar"><svg><use href="#i-edit"/></svg></button><button class="btn-icon-sm danger" onclick="delRes('${r.id}')" aria-label="Eliminar"><svg><use href="#i-close"/></svg></button>${r.tel?`<button class="btn-icon-sm btn-wa" onclick="waMsgHuesped('${r.id}')" title="WhatsApp al huésped" style="background:#128c5e;border-color:#128c5e"><svg><use href="#i-wa"/></svg></button>`:''}</div>`:''}</td>
     </tr>`;
   }).join('');
 }
@@ -2743,12 +2743,32 @@ Respondé basándote en los datos reales y en el conocimiento de la app.`;
     const mirror = document.getElementById('res-scroll-mirror');
     const inner = document.getElementById('res-scroll-inner');
     if(!wrap||!mirror||!inner) return;
-    function syncWidth(){ inner.style.width = wrap.scrollWidth + 'px'; }
+
+    function syncWidth(){
+      inner.style.width = wrap.scrollWidth + 'px';
+      // Alinear mirror con el wrap horizontalmente
+      const rect = wrap.getBoundingClientRect();
+      mirror.style.left = rect.left + 'px';
+      mirror.style.right = (window.innerWidth - rect.right) + 'px';
+      mirror.style.width = (rect.right - rect.left) + 'px';
+    }
+
+    function checkVisibility(){
+      const rect = wrap.getBoundingClientRect();
+      const visible = rect.top < window.innerHeight && rect.bottom > 0;
+      const needsScroll = wrap.scrollWidth > wrap.clientWidth;
+      mirror.style.display = (visible && needsScroll) ? 'block' : 'none';
+      if(visible) syncWidth();
+    }
+
     syncWidth();
     wrap.addEventListener('scroll', ()=>{ mirror.scrollLeft = wrap.scrollLeft; });
     mirror.addEventListener('scroll', ()=>{ wrap.scrollLeft = mirror.scrollLeft; });
-    const ro = new ResizeObserver(syncWidth);
+    window.addEventListener('scroll', checkVisibility);
+    window.addEventListener('resize', ()=>{ syncWidth(); checkVisibility(); });
+    const ro = new ResizeObserver(()=>{ syncWidth(); checkVisibility(); });
     ro.observe(wrap);
+    checkVisibility();
   }
   document.addEventListener('DOMContentLoaded', initScrollMirror);
 })();
