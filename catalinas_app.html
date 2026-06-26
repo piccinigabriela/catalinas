@@ -152,6 +152,8 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
 .btn-row{display:flex;gap:10px;margin-top:22px;justify-content:flex-end;flex-wrap:wrap;}
 
 .table-wrap{overflow-x:auto;}
+.table-scroll-mirror{overflow-x:auto;overflow-y:hidden;height:12px;position:sticky;bottom:0;z-index:10;background:var(--surface);border-top:1px solid var(--line-1);}
+.table-scroll-mirror-inner{height:1px;}
 table{width:100%;border-collapse:collapse;font-size:0.83rem;}
 thead tr{border-bottom:1px solid var(--line-2);}
 thead th{color:var(--muted);font-weight:600;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;padding:12px 14px;text-align:left;white-space:nowrap;background:var(--paper-2);}
@@ -542,10 +544,11 @@ html.dark .xenia-input{background:var(--paper-3);}
           </div>
         </div>
         <div class="card" style="padding:0;overflow:hidden;">
-          <div class="table-wrap"><table>
+          <div class="table-wrap" id="res-table-wrap"><table>
             <thead><tr><th class="res-sticky-1">#</th><th class="res-sticky-2">Depto</th><th class="res-sticky-3">Huésped</th><th>Check-in</th><th>Check-out</th><th>Noches</th><th>USD/N</th><th>Subtotal</th><th>Airbnb</th><th>Neto</th><th>Gestión</th><th>Líquido</th><th>Estado</th><th>Destino</th><th>Seña</th><th>Saldo</th><th></th></tr></thead>
             <tbody id="tabla-reservas"></tbody>
           </table></div>
+          <div class="table-scroll-mirror" id="res-scroll-mirror"><div class="table-scroll-mirror-inner" id="res-scroll-inner"></div></div>
         </div>
       </div>
 
@@ -554,9 +557,19 @@ html.dark .xenia-input{background:var(--paper-3);}
         <div class="section-sub">Calendario mes a mes</div>
         <div class="card">
           <div class="cal-controls">
+            <div style="display:flex;gap:6px;margin-right:8px">
+              <button id="btn-vista-mes" class="btn btn-primary btn-sm" onclick="setVistaCalendario('mes')">Mensual</button>
+              <button id="btn-vista-sem" class="btn btn-outline btn-sm" onclick="setVistaCalendario('sem')">Semanal</button>
+            </div>
             <label>Mes</label>
             <select id="cal-mes"><option value="0">Enero</option><option value="1">Febrero</option><option value="2">Marzo</option><option value="3">Abril</option><option value="4">Mayo</option><option value="5">Junio</option><option value="6">Julio</option><option value="7">Agosto</option><option value="8">Septiembre</option><option value="9">Octubre</option><option value="10">Noviembre</option><option value="11">Diciembre</option></select>
-            <label>Año</label><select id="cal-anio"></select>
+            <label id="lbl-anio">Año</label><select id="cal-anio"></select>
+            <div id="nav-semana" style="display:none;align-items:center;gap:6px">
+              <button class="btn btn-outline btn-sm" onclick="moverSemana(-1)">◀</button>
+              <span id="semana-label" style="font-size:12px;font-weight:500;min-width:160px;text-align:center"></span>
+              <button class="btn btn-outline btn-sm" onclick="moverSemana(1)">▶</button>
+              <button class="btn btn-outline btn-sm" onclick="irHoySemana()">Hoy</button>
+            </div>
             <div class="export-group">
               <button class="btn btn-outline btn-sm" onclick="exportOcupacion()"><svg><use href="#i-download"/></svg>CSV</button>
               <button class="btn btn-accent btn-sm" onclick="exportOcupacionPDF()"><svg><use href="#i-pdf"/></svg>PDF</button>
@@ -1258,10 +1271,50 @@ function renderReservas(){
       <td style="font-size:0.78rem;color:var(--muted)">${esc(r.destino||'—')}</td>
       <td style="font-weight:600;color:var(--ok)">${senia?fmt(senia):'—'}</td>
       <td style="font-weight:600;color:${saldo?(pend<0.01?'var(--ok)':'var(--err)'):'var(--muted)'}">${saldo?fmt(saldo)+(pend<0.01?' ✓':''):'—'}</td>
-      <td>${ia?`<div style="display:flex;gap:6px"><button class="btn-icon-sm" onclick="editRes('${r.id}')" aria-label="Editar"><svg><use href="#i-edit"/></svg></button><button class="btn-icon-sm danger" onclick="delRes('${r.id}')" aria-label="Eliminar"><svg><use href="#i-close"/></svg></button>${r.tel?`<button class="btn-icon-sm btn-wa" onclick="waMsgHuesped('${r.id}')" title="WhatsApp al huésped" style="background:#128c5e;border-color:#128c5e"><svg><use href="#i-wa"/></svg></button>`:''}</div>`:''}</td>
+      <td>${ia?`<div style="display:flex;gap:6px"><button class="btn-icon-sm" onclick="abrirFichaRes('${r.id}')" title="Ver ficha" style="background:var(--accent-muted,#e8f0ec);border-color:var(--accent)"><svg><use href="#i-info"/></svg></button><button class="btn-icon-sm" onclick="editRes('${r.id}')" aria-label="Editar"><svg><use href="#i-edit"/></svg></button><button class="btn-icon-sm danger" onclick="delRes('${r.id}')" aria-label="Eliminar"><svg><use href="#i-close"/></svg></button>${r.tel?`<button class="btn-icon-sm btn-wa" onclick="waMsgHuesped('${r.id}')" title="WhatsApp al huésped" style="background:#128c5e;border-color:#128c5e"><svg><use href="#i-wa"/></svg></button>`:''}</div>`:''}</td>
     </tr>`;
   }).join('');
 }
+// ── FICHA DETALLE DE RESERVA ──────────────────────────────────────────
+function abrirFichaRes(id){
+  const r = reservas.find(x=>x.id===id);
+  if(!r) return;
+  const noches = calcNights(r.checkin, r.checkout);
+  $('ficha-nombre').textContent = r.huesped;
+  const campos = [
+    ['Unidad', DN[r.depto]||r.depto],
+    ['Check-in', fmtD(r.checkin)],
+    ['Check-out', fmtD(r.checkout)],
+    ['Noches', noches],
+    ['Plataforma', r.plataforma||'—'],
+    ['Estado', r.estado||'—'],
+    ['Precio', formatMoney(r.precio||0)],
+    ['Seña', r.senia ? formatMoney(r.senia) : '—'],
+    ['Saldo', r.saldo ? formatMoney(r.saldo) : '—'],
+    ['Nacionalidad', r.nac||'—'],
+    ['Teléfono', r.tel||'—'],
+    ['Notas', r.notas||'—'],
+  ];
+  $('ficha-body').innerHTML = campos.map(([k,v])=>`
+    <div>
+      <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px">${k}</div>
+      <div style="font-weight:500">${escHtml(String(v))}</div>
+    </div>`).join('');
+  const ia = cu==='admin';
+  $('ficha-actions').innerHTML = `
+    <button class="btn btn-outline btn-sm" onclick="cerrarFichaRes()">Cerrar</button>
+    ${ia?`<button class="btn btn-primary btn-sm" onclick="cerrarFichaRes();editRes('${r.id}')"><svg><use href="#i-edit"/></svg> Editar</button>`:''}
+    ${r.tel&&ia?`<button class="btn btn-sm btn-wa" onclick="waMsgHuesped('${r.id}')"><svg><use href="#i-wa"/></svg> Huésped</button>`:''}
+  `;
+  const modal = $('modal-ficha-res');
+  modal.style.display = 'flex';
+}
+
+function cerrarFichaRes(){
+  $('modal-ficha-res').style.display = 'none';
+}
+// ─────────────────────────────────────────────────────────────────────
+
 function delRes(id){if(cu!=='admin')return;if(!confirm('¿Eliminar reserva?'))return;reservas=reservas.filter(r=>r.id!==id);deleteOneReserva(id);renderReservas();toast('Reserva eliminada');}
 function exportReservas(){
   const h=['Depto','Huésped','Nacionalidad','Check-in','Check-out','Noches','USD/Noche','Subtotal','Com.Airbnb','Neto','Com.Gestión','Líquido','Estado','Plataforma','Destino cobro','Notas','Seña','Saldo'];
@@ -1369,8 +1422,129 @@ function importarCSV(input){
   reader.readAsText(file,'UTF-8');
 }
 
+// ── VISTA SEMANAL DEL CALENDARIO ──────────────────────────────────────
+let _vistaCalendario = 'mes'; // 'mes' | 'sem'
+let _semanaBase = null; // lunes de la semana activa
+
+function setVistaCalendario(v){
+  _vistaCalendario = v;
+  $('btn-vista-mes').className = 'btn btn-sm ' + (v==='mes' ? 'btn-primary' : 'btn-outline');
+  $('btn-vista-sem').className = 'btn btn-sm ' + (v==='sem' ? 'btn-primary' : 'btn-outline');
+  $('cal-vista-label').textContent = v==='mes' ? 'vista mensual' : 'vista semanal';
+  // Mostrar/ocultar controles
+  const showMes = v === 'mes';
+  document.querySelectorAll('#cal-mes, label[for="cal-mes"]').forEach(el=>el.style.display=showMes?'':'none');
+  document.querySelectorAll('#lbl-anio, #cal-anio').forEach(el=>el.style.display=showMes?'':'none');
+  $('nav-semana').style.display = showMes ? 'none' : 'flex';
+  if(v==='sem'){
+    if(!_semanaBase) _semanaBase = getLunes(new Date());
+    actualizarLabelSemana();
+  }
+  renderCalendario();
+}
+
+function getLunes(fecha){
+  const d = new Date(fecha);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  d.setHours(0,0,0,0);
+  return d;
+}
+
+function moverSemana(n){
+  if(!_semanaBase) _semanaBase = getLunes(new Date());
+  _semanaBase = new Date(_semanaBase);
+  _semanaBase.setDate(_semanaBase.getDate() + n * 7);
+  actualizarLabelSemana();
+  renderCalendario();
+}
+
+function irHoySemana(){
+  _semanaBase = getLunes(new Date());
+  actualizarLabelSemana();
+  renderCalendario();
+}
+
+function actualizarLabelSemana(){
+  if(!_semanaBase) return;
+  const lunes = new Date(_semanaBase);
+  const domingo = new Date(_semanaBase);
+  domingo.setDate(domingo.getDate() + 6);
+  const fmt = d => `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
+  $('semana-label').textContent = `${fmt(lunes)} — ${fmt(domingo)}`;
+}
+
+function renderCalendarioSemanal(){
+  if(!_semanaBase) _semanaBase = getLunes(new Date());
+  const dias = [];
+  const DIAS_NOMBRE = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  for(let i=0;i<7;i++){
+    const d = new Date(_semanaBase);
+    d.setDate(d.getDate() + i);
+    dias.push(d);
+  }
+
+  const parts = [`<div class="cal-grid" style="grid-template-columns:70px repeat(7,1fr)">`,
+    `<div class="cal-header cal-header-depto">Depto</div>`];
+
+  dias.forEach(d=>{
+    const dow = d.getDay();
+    const hoy = new Date(); hoy.setHours(0,0,0,0);
+    const esHoy = d.getTime() === hoy.getTime();
+    parts.push(`<div class="cal-header${dow===0||dow===6?' weekend':''}${esHoy?' cal-hoy':''}" style="${esHoy?'font-weight:700;background:var(--accent);color:white;':''}">${DIAS_NOMBRE[dow]} ${d.getDate()}/${d.getMonth()+1}</div>`);
+  });
+
+  const byDep={};DEPTOS.forEach(c=>byDep[c]={});
+  const byDepCO={};DEPTOS.forEach(c=>byDepCO[c]={});
+  reservas.forEach(r=>{
+    if(r.estado==='Cancelada'||!byDep[r.depto])return;
+    const s=new Date(r.checkin),e=new Date(r.checkout);
+    for(let d=new Date(s);d<e;d.setDate(d.getDate()+1)){
+      byDep[r.depto][d.toISOString().split('T')[0]]=r;
+    }
+    byDepCO[r.depto][r.checkout]=r;
+  });
+
+  DEPTOS.forEach(code=>{
+    parts.push(`<div class="cal-depto" style="background:${DC[code]}">${DN[code]}</div>`);
+    dias.forEach(d=>{
+      const ds = d.toISOString().split('T')[0];
+      const res = byDep[code][ds];
+      const resOut = byDepCO[code][ds];
+      const bloqInfo = !res && getBloqueo(code, ds);
+      const bloqLabel = bloqInfo ? bloqInfo.plat === 'Airbnb' ? 'A' : bloqInfo.plat === 'Booking' ? 'B' : 'X' : '';
+
+      if(res){
+        const isCI = res.checkin === ds, isCO = res.checkout === ds;
+        const nombre = res.huesped.split(' ')[0];
+        // En semanal tenemos más espacio — mostrar más info
+        const info = `${nombre}${isCI?' ✈':''}${isCO?' 🚪':''}`;
+        const plat = res.plataforma || '';
+        parts.push(`<div class="cal-cell occupied" style="background:${DC[code]}22;border-left:3px solid ${DC[code]};cursor:pointer;padding:4px 6px;font-size:11px;line-height:1.4" onclick="openCalPopup('${res.id}','${ds}')">
+          <div style="font-weight:600">${escHtml(nombre)}</div>
+          <div style="color:var(--muted)">${plat}${isCI?' CI':''}${resOut&&resOut.id!==res.id?' / CO':''}</div>
+        </div>`);
+      } else if(bloqInfo){
+        parts.push(`<div class="cal-cell blocked" title="${bloqInfo.plat}"><span class="cal-bloq-label">${bloqLabel}</span></div>`);
+      } else if(resOut){
+        // Same-day: checkout esta mañana, libre esta tarde
+        parts.push(`<div class="cal-cell same-day" onclick="openCalPopup('${resOut.id}','${ds}')"><span class="cal-checkout-label">CO</span></div>`);
+      } else {
+        parts.push(`<div class="cal-cell free"></div>`);
+      }
+    });
+  });
+
+  parts.push('</div>');
+  $('calendario-grid').innerHTML = parts.join('');
+}
+// ─────────────────────────────────────────────────────────────────────
+
 function renderCalendario(){
-  const mes=parseInt($('cal-mes').value),anio=parseInt($('cal-anio').value);
+  if(_vistaCalendario === 'sem'){ renderCalendarioSemanal(); return; }
+  const mes=parseInt($('
+'cal-mes').value),anio=parseInt($('cal-anio').value);
   const dim=new Date(anio,mes+1,0).getDate();
   const parts=[`<div class="cal-grid" style="grid-template-columns:70px repeat(${dim},1fr)">`,`<div class="cal-header cal-header-depto">Depto</div>`];
   for(let d=1;d<=dim;d++){const dow=new Date(anio,mes,d).getDay();parts.push(`<div class="cal-header${dow===0||dow===6?' weekend':''}">${d}</div>`);}
@@ -2562,6 +2736,36 @@ Respondé basándote en los datos reales y en el conocimiento de la app.`;
     console.error('Xenia error:',e);
   }
 }
+
+// ── SCROLL HORIZONTAL FIJO EN TABLA DE RESERVAS ──────────────────────
+(function(){
+  function initScrollMirror(){
+    const wrap = document.getElementById('res-table-wrap');
+    const mirror = document.getElementById('res-scroll-mirror');
+    const inner = document.getElementById('res-scroll-inner');
+    if(!wrap||!mirror||!inner) return;
+    function syncWidth(){ inner.style.width = wrap.scrollWidth + 'px'; }
+    syncWidth();
+    wrap.addEventListener('scroll', ()=>{ mirror.scrollLeft = wrap.scrollLeft; });
+    mirror.addEventListener('scroll', ()=>{ wrap.scrollLeft = mirror.scrollLeft; });
+    const ro = new ResizeObserver(syncWidth);
+    ro.observe(wrap);
+  }
+  document.addEventListener('DOMContentLoaded', initScrollMirror);
+})();
+// ─────────────────────────────────────────────────────────────────────
 </script>
+
+<!-- Modal ficha detalle de reserva -->
+<div id="modal-ficha-res" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;align-items:center;justify-content:center" onclick="if(event.target===this)cerrarFichaRes()">
+  <div style="background:var(--surface);border-radius:12px;padding:28px;max-width:480px;width:90%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 id="ficha-nombre" style="font-size:16px;font-weight:600;color:var(--accent)"></h3>
+      <button onclick="cerrarFichaRes()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted)">✕</button>
+    </div>
+    <div id="ficha-body" style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;font-size:13px"></div>
+    <div style="display:flex;gap:8px;margin-top:20px;justify-content:flex-end" id="ficha-actions"></div>
+  </div>
+</div>
 </body>
 </html>
