@@ -829,6 +829,8 @@ const MOBILE_NAV={
   admin_e:['ocupacion','avisos'],
   mant:['avisos']
 };
+let _vistaCalendario = 'mes'; // 'mes' | 'sem'
+let _semanaBase = null; // lunes de la semana activa
 const DC={D01:'#2e5d8a',D02:'#3e5b2a',D03:'#a85828',D04:'#5d3d7a',D05:'#9a3a2e',D06:'#24324f',D07:'#6e3a18'};
 const DN={D01:'PB5',D02:'1A',D03:'2C',D04:'2D',D05:'PR1',D06:'PR2',D07:'1B'};
 const DEPTOS=['D02','D07','D03','D04','D05','D06','D01'];
@@ -1423,8 +1425,6 @@ function importarCSV(input){
 }
 
 // ── VISTA SEMANAL DEL CALENDARIO ──────────────────────────────────────
-let _vistaCalendario = 'mes'; // 'mes' | 'sem'
-let _semanaBase = null; // lunes de la semana activa
 
 function setVistaCalendario(v){
   _vistaCalendario = v;
