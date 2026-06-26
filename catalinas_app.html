@@ -1543,8 +1543,7 @@ function renderCalendarioSemanal(){
 
 function renderCalendario(){
   if(_vistaCalendario === 'sem'){ renderCalendarioSemanal(); return; }
-  const mes=parseInt($('
-'cal-mes').value),anio=parseInt($('cal-anio').value);
+  const mes=parseInt($('cal-mes').value),anio=parseInt($('cal-anio').value);
   const dim=new Date(anio,mes+1,0).getDate();
   const parts=[`<div class="cal-grid" style="grid-template-columns:70px repeat(${dim},1fr)">`,`<div class="cal-header cal-header-depto">Depto</div>`];
   for(let d=1;d<=dim;d++){const dow=new Date(anio,mes,d).getDay();parts.push(`<div class="cal-header${dow===0||dow===6?' weekend':''}">${d}</div>`);}
