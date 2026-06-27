@@ -829,8 +829,6 @@ const MOBILE_NAV={
   admin_e:['ocupacion','avisos'],
   mant:['avisos']
 };
-let _vistaCalendario = 'mes'; // 'mes' | 'sem'
-let _semanaBase = null; // lunes de la semana activa
 const DC={D01:'#2e5d8a',D02:'#3e5b2a',D03:'#a85828',D04:'#5d3d7a',D05:'#9a3a2e',D06:'#24324f',D07:'#6e3a18'};
 const DN={D01:'PB5',D02:'1A',D03:'2C',D04:'2D',D05:'PR1',D06:'PR2',D07:'1B'};
 const DEPTOS=['D02','D07','D03','D04','D05','D06','D01'];
@@ -1300,7 +1298,7 @@ function abrirFichaRes(id){
   $('ficha-body').innerHTML = campos.map(([k,v])=>`
     <div>
       <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px">${k}</div>
-      <div style="font-weight:500">${escHtml(String(v))}</div>
+      <div style="font-weight:500">${esc(String(v))}</div>
     </div>`).join('');
   const ia = cu==='admin';
   $('ficha-actions').innerHTML = `
@@ -1425,6 +1423,8 @@ function importarCSV(input){
 }
 
 // ── VISTA SEMANAL DEL CALENDARIO ──────────────────────────────────────
+let _vistaCalendario = 'mes'; // 'mes' | 'sem'
+let _semanaBase = null; // lunes de la semana activa
 
 function setVistaCalendario(v){
   _vistaCalendario = v;
@@ -1522,7 +1522,7 @@ function renderCalendarioSemanal(){
         const info = `${nombre}${isCI?' ✈':''}${isCO?' 🚪':''}`;
         const plat = res.plataforma || '';
         parts.push(`<div class="cal-cell occupied" style="background:${DC[code]}22;border-left:3px solid ${DC[code]};cursor:pointer;padding:4px 6px;font-size:11px;line-height:1.4" onclick="openCalPopup('${res.id}','${ds}')">
-          <div style="font-weight:600">${escHtml(nombre)}</div>
+          <div style="font-weight:600">${esc(nombre)}</div>
           <div style="color:var(--muted)">${plat}${isCI?' CI':''}${resOut&&resOut.id!==res.id?' / CO':''}</div>
         </div>`);
       } else if(bloqInfo){
