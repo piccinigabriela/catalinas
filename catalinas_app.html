@@ -1521,9 +1521,9 @@ function renderCalendarioSemanal(){
         // En semanal tenemos más espacio — mostrar más info
         const info = `${nombre}${isCI?' ✈':''}${isCO?' 🚪':''}`;
         const plat = res.plataforma || '';
-        parts.push(`<div class="cal-cell occupied" style="background:${DC[code]}22;border-left:3px solid ${DC[code]};cursor:pointer;padding:4px 6px;font-size:11px;line-height:1.4" onclick="openCalPopup('${res.id}','${ds}')">
-          <div style="font-weight:600">${esc(nombre)}</div>
-          <div style="color:var(--muted)">${plat}${isCI?' CI':''}${resOut&&resOut.id!==res.id?' / CO':''}</div>
+        parts.push(`<div class="cal-cell occupied" style="background:${DC[code]};cursor:pointer;padding:4px 6px;font-size:11px;line-height:1.4" onclick="openCalPopup('${res.id}','${ds}')">
+          <div style="font-weight:700;color:#000">${esc(nombre)}</div>
+          <div style="color:rgba(0,0,0,0.7);font-size:10px">${plat}${isCI?' CI':''}${resOut&&resOut.id!==res.id?' / CO':''}</div>
         </div>`);
       } else if(bloqInfo){
         parts.push(`<div class="cal-cell blocked" title="${bloqInfo.plat}"><span class="cal-bloq-label">${bloqLabel}</span></div>`);
