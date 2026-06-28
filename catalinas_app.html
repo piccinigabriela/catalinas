@@ -17,35 +17,37 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
 :root{
-  --ink:#1a1918;--ink-2:#2a2927;--muted:#6b6660;--muted-2:#9c968e;
-  --paper:#faf8f3;--paper-2:#f2ede3;--paper-3:#e8e1d4;
-  --line:rgba(26,25,24,0.08);--line-2:rgba(26,25,24,0.14);
-  --accent:#b8833d;--accent-2:#9a6a28;--accent-soft:#f2e6cf;
-  --ok:#4f7a5a;--ok-bg:#e8efe9;--warn:#a86c2b;--warn-bg:#f5e9d6;
-  --err:#a8422e;--err-bg:#f3dfd9;--purple:#7a5d8a;--purple-bg:#ece5f2;
-  --r:8px;--r-lg:14px;--sb:240px;--bn:60px;
-  --shadow-1:0 1px 2px rgba(26,25,24,0.04);
-  --shadow-2:0 8px 28px -12px rgba(26,25,24,0.12);
+  --ink:#241c10;--ink-2:#362c1a;--muted:#8a7a5c;--muted-2:#b0a079;
+  --bg:#ece0c6;
+  --paper:#fbf5e8;--paper-2:#f3e9d2;--paper-3:#e9dcbf;
+  --line:rgba(60,44,20,0.10);--line-2:rgba(60,44,20,0.18);
+  --accent:#d2502a;--accent-2:#b53f1d;--accent-soft:#f6e0d2;
+  --ok:#3f7d48;--ok-bg:#e2eddc;--warn:#9a6b12;--warn-bg:#f3e6c8;
+  --err:#a8422e;--err-bg:#f3dfd9;--purple:#8a5d6a;--purple-bg:#f1e3e6;
+  --r:10px;--r-lg:16px;--sb:240px;--bn:60px;
+  --shadow-1:0 1px 2px rgba(80,55,20,0.05);
+  --shadow-2:0 12px 36px -20px rgba(90,60,20,0.5);
 }
 html.dark{
-  --ink:#e8e4dc;--ink-2:#d4cfc6;--muted:#8a8480;--muted-2:#6a6460;
-  --paper:#1a1917;--paper-2:#242320;--paper-3:#2e2c28;
-  --line:rgba(232,228,220,0.08);--line-2:rgba(232,228,220,0.14);
-  --accent:#d4a05a;--accent-2:#b8833d;--accent-soft:rgba(212,160,90,0.15);
-  --ok:#6a9a7a;--ok-bg:rgba(79,122,90,0.2);
-  --warn:#c88c4b;--warn-bg:rgba(168,108,43,0.2);
-  --err:#c86050;--err-bg:rgba(168,66,46,0.2);
-  --purple:#9a7daa;--purple-bg:rgba(122,93,138,0.2);
-  --shadow-1:0 1px 2px rgba(0,0,0,0.2);
-  --shadow-2:0 8px 28px -12px rgba(0,0,0,0.4);
+  --ink:#f3e9d6;--ink-2:#cdbd9c;--muted:#9c8a6a;--muted-2:#6a5e47;
+  --bg:#1b1610;
+  --paper:#251d13;--paper-2:#2f2417;--paper-3:#3a2e1d;
+  --line:rgba(243,233,214,0.09);--line-2:rgba(243,233,214,0.16);
+  --accent:#ef6e44;--accent-2:#ff855a;--accent-soft:rgba(239,110,68,0.18);
+  --ok:#6abf7a;--ok-bg:rgba(106,191,122,0.16);
+  --warn:#d4a64a;--warn-bg:rgba(212,166,74,0.16);
+  --err:#df8a6a;--err-bg:rgba(223,138,90,0.16);
+  --purple:#c89aa6;--purple-bg:rgba(200,154,166,0.16);
+  --shadow-1:0 1px 2px rgba(0,0,0,0.25);
+  --shadow-2:0 12px 36px -20px rgba(0,0,0,0.55);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html{font-size:15px;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
-body{font-family:'Figtree',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;font-weight:400;letter-spacing:-0.005em;}
+body{font-family:'Figtree',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;font-weight:400;letter-spacing:-0.005em;}
 button{font-family:inherit;}
 ::selection{background:var(--accent-soft);color:var(--ink);}
 
-#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--paper);padding:24px;position:relative;overflow:hidden;}
+#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:24px;position:relative;overflow:hidden;}
 #login-screen::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at top,rgba(184,131,61,0.06),transparent 60%);pointer-events:none;}
 .login-box{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:44px 40px;width:380px;max-width:100%;position:relative;z-index:1;}
 .login-mark{width:44px;height:44px;border-radius:10px;background:var(--ink);color:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-size:1.5rem;font-weight:500;margin-bottom:24px;}
@@ -86,7 +88,7 @@ button{font-family:inherit;}
 .nav-item svg{width:16px;height:16px;flex-shrink:0;opacity:.9;}
 .sidebar-footer{padding:12px 22px;border-top:1px solid var(--line);font-size:0.66rem;color:var(--muted-2);letter-spacing:0.03em;}
 .main{margin-left:var(--sb);min-height:100vh;}
-.topbar{padding:18px 36px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;backdrop-filter:blur(8px);background:rgba(250,248,243,0.85);}
+.topbar{padding:18px 36px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;backdrop-filter:blur(10px);background:rgba(251,245,232,0.82);}
 .topbar-title{font-family:'Fraunces',serif;font-size:1.4rem;color:var(--ink);font-weight:500;letter-spacing:-0.02em;}
 .topbar-date{font-size:0.78rem;color:var(--muted);letter-spacing:0.01em;}
 .content{padding:32px 36px 48px;max-width:1400px;}
@@ -106,12 +108,12 @@ button{font-family:inherit;}
 .screen.active{display:block;}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 
-.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:26px;margin-bottom:20px;}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:26px;margin-bottom:20px;box-shadow:var(--shadow-1);}
 .card-title{font-family:'Fraunces',serif;font-size:1.02rem;color:var(--ink);margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;font-weight:500;letter-spacing:-0.01em;}
 .card-title .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0;}
 
 .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
-.stat-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:22px;transition:all .2s;}
+.stat-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:22px;transition:all .2s;box-shadow:var(--shadow-1);}
 .stat-card:hover{border-color:var(--line-2);}
 .stat-label{font-size:0.68rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);font-weight:600;}
 .stat-value{font-family:'Fraunces',serif;font-size:2rem;color:var(--ink);margin:10px 0 4px;font-weight:500;letter-spacing:-0.02em;line-height:1;}
@@ -299,7 +301,7 @@ thead .res-sticky-1,thead .res-sticky-2,thead .res-sticky-3{background:var(--pap
 .pago-resumen{background:var(--paper-2);border-radius:var(--r);padding:12px 14px;margin-top:12px;font-size:0.82rem;color:var(--muted);}
 .pago-resumen b{color:var(--ink);font-weight:600;}
 
-#loading-overlay{position:fixed;inset:0;background:rgba(250,248,243,0.92);backdrop-filter:blur(4px);z-index:9998;display:flex;align-items:center;justify-content:center;}
+#loading-overlay{position:fixed;inset:0;background:rgba(236,224,198,0.92);backdrop-filter:blur(4px);z-index:9998;display:flex;align-items:center;justify-content:center;}
 .loader-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:28px 36px;text-align:center;box-shadow:var(--shadow-2);}
 .loader-title{font-family:'Fraunces',serif;font-size:1.05rem;color:var(--ink);margin-bottom:6px;font-weight:500;}
 .loader-sub{font-size:0.78rem;color:var(--muted);}
@@ -394,6 +396,47 @@ html.dark .loading-overlay{background:rgba(0,0,0,0.7);}
 .xenia-sug:hover{background:var(--ink);color:var(--paper);border-color:var(--ink);}
 html.dark .xenia-msg.bot{background:var(--paper-3);}
 html.dark .xenia-input{background:var(--paper-3);}
+.tl-bar{display:flex;align-items:center;padding:0 8px;border-radius:8px;color:#fff;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;overflow:hidden;box-shadow:0 1px 4px -1px rgba(60,30,0,.35);z-index:10;transition:box-shadow .15s,filter .15s;}
+.tl-bar:hover{filter:brightness(1.07);}
+.tl-bar-nm{font-weight:600;font-size:0.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'Figtree',sans-serif;}
+.ocu-stats-row{display:grid;grid-template-columns:repeat(3,1fr) 1.3fr;gap:12px;margin-bottom:16px;}
+.ocu-stat{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px 20px;box-shadow:var(--shadow-1);}
+.os-l{font-size:.62rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700;}
+.os-v{font-family:'Fraunces',serif;font-size:1.7rem;font-weight:600;letter-spacing:-.02em;line-height:1;margin:7px 0 3px;}
+.os-s{font-size:.72rem;color:var(--accent-2);font-weight:600;}
+.ocu-spark{background:var(--ink);border-radius:var(--r-lg);padding:16px 20px;box-shadow:var(--shadow-1);}
+.ocu-spark .os-v{color:#fff;}
+@media(max-width:860px){.ocu-stats-row{grid-template-columns:1fr 1fr;}.ocu-spark{grid-column:1/-1;}.ocu-spark svg{width:100%;height:auto;}}
+/* ── RENDIMIENTO premium ── */
+.rend-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-bottom:18px;}
+#rend-totals{display:block;}
+.rend-kpi{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px 20px;box-shadow:var(--shadow-1);}
+.rend-kpi.dark{background:var(--ink);border-color:var(--ink);}
+.rk-l{font-size:.64rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;}
+.rend-kpi.dark .rk-l{color:rgba(255,255,255,.55);}
+.rk-v{font-family:'Fraunces',serif;font-size:1.55rem;font-weight:600;letter-spacing:-.02em;margin:7px 0 3px;line-height:1;}
+.rend-kpi.dark .rk-v{color:#fff;}
+html.dark .rend-kpi.dark .rk-v{color:var(--ink);}
+.rk-s{font-size:.72rem;font-weight:600;}
+.rend-split{display:grid;grid-template-columns:1.25fr 1fr;gap:14px;align-items:start;}
+.rend-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:22px 24px;box-shadow:var(--shadow-1);}
+.rend-card.dark{background:var(--ink);border-color:var(--ink);}
+html.dark .rend-card.dark .rk-l{color:rgba(243,233,214,.55);}
+.rend-card-title{font-family:'Fraunces',serif;font-size:1.05rem;font-weight:600;}
+.rend-card-sub{font-size:.76rem;color:var(--muted);margin-top:3px;}
+.rend-right{display:flex;flex-direction:column;gap:14px;}
+.rend-bar-row{display:flex;align-items:center;gap:11px;margin-bottom:11px;}
+.rb-name{width:88px;font-size:.78rem;font-weight:600;color:var(--ink-2);display:flex;align-items:center;gap:7px;flex-shrink:0;}
+.rb-name .sw{width:9px;height:9px;border-radius:3px;flex-shrink:0;}
+.rb-track{flex:1;height:22px;background:var(--paper-2);border-radius:7px;overflow:hidden;}
+.rb-fill{height:100%;border-radius:7px;transition:width .5s cubic-bezier(.3,.8,.3,1);}
+.rb-val{width:96px;text-align:right;font-size:.78rem;font-weight:700;font-family:'Fraunces',serif;flex-shrink:0;}
+.rend-bd-title{font-size:.66rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;}
+.rend-bd-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:.84rem;}
+.rend-bd-item:last-child{border-bottom:none;}
+.rend-bd-item span{color:var(--ink-2);}
+.rend-bd-item b{font-family:'Fraunces',serif;font-weight:600;}
+@media(max-width:860px){.rend-kpi-grid{grid-template-columns:1fr 1fr;}.rend-split{grid-template-columns:1fr;}.rb-name{width:74px;}}
 </style>
 </head>
 <body>
@@ -555,6 +598,7 @@ html.dark .xenia-input{background:var(--paper-3);}
       <div class="screen" id="screen-ocupacion">
         <div class="section-title">Ocupación</div>
         <div class="section-sub">Calendario — <span id="cal-vista-label">vista mensual</span></div>
+        <div id="ocu-stats"></div>
         <div class="card">
           <div class="cal-controls">
             <div style="display:flex;gap:6px;margin-right:8px">
@@ -1109,6 +1153,10 @@ function showScreen(id){
   const bn=$('bn-'+id);if(bn)bn.classList.add('active');
   $('topbar-title').textContent=NAV_META[id]?.label||id;
   const R={dashboard:renderHoy,reservas:renderReservas,ocupacion:renderCalendario,gastos:renderGastos,rendimiento:renderRendimiento,avisos:renderAvisos,config:renderConfig,huespedes:renderHuespedes};
+  if(id==='ocupacion' && !_calViewInit){
+    _calViewInit=true;
+    if(window.innerWidth<=860){ setVistaCalendario('sem'); window.scrollTo(0,0); return; }
+  }
   if(R[id])R[id]();
   window.scrollTo(0,0);
 }
@@ -1424,6 +1472,7 @@ function importarCSV(input){
 
 // ── VISTA SEMANAL DEL CALENDARIO ──────────────────────────────────────
 let _vistaCalendario = 'mes'; // 'mes' | 'sem'
+let _calViewInit = false; // en móvil arranca en Semanal la 1ª vez
 let _semanaBase = null; // lunes de la semana activa
 
 function setVistaCalendario(v){
@@ -1542,7 +1591,8 @@ function renderCalendarioSemanal(){
 // ─────────────────────────────────────────────────────────────────────
 
 function renderCalendario(){
-  if(_vistaCalendario === 'sem'){ renderCalendarioSemanal(); return; }
+  if(_vistaCalendario === 'sem'){ renderTimelineSemana(); return; }
+  renderTimeline(); return;
   const mes=parseInt($('cal-mes').value),anio=parseInt($('cal-anio').value);
   const dim=new Date(anio,mes+1,0).getDate();
   const parts=[`<div class="cal-grid" style="grid-template-columns:70px repeat(${dim},1fr)">`,`<div class="cal-header cal-header-depto">Depto</div>`];
@@ -1608,6 +1658,215 @@ function renderCalendario(){
     +`<span class="cal-legend-item"><span class="sw" style="background:linear-gradient(to bottom right,var(--paper-2) 50%,#7a9a6a 50%);border:1px solid var(--line-2)"></span>Día compartido</span>`
     +`<span class="cal-legend-item"><span class="sw" style="background:var(--paper-2);border:1px solid var(--line-2)"></span>Libre</span>`;
 }
+// ── TIMELINE (Gantt arrastrable) ──────────────────────────────────
+const TL_COLW=42,TL_ROWH=48,TL_BARH=34,TL_HEAD=42,TL_LW=66;
+let _tlColW=42;
+// Color por ORIGEN de la reserva (no por depto)
+const ORIGEN_COL={Airbnb:'#cf5a34',Booking:'#3a6079',Directo:'#6a8a4a',Expedia:'#9a7b3a',Otros:'#8a6a55'};
+function origenColor(res){return ORIGEN_COL[res.plataforma]||ORIGEN_COL.Otros;}
+function ocuLegendHTML(){
+  const ord=['Airbnb','Booking','Directo'];
+  return ord.map(o=>`<span class="cal-legend-item"><span class="sw" style="background:${ORIGEN_COL[o]}"></span>${o}</span>`).join('')
+    +`<span class="cal-legend-item"><span class="sw" style="background:repeating-linear-gradient(45deg,#b07a3a,#b07a3a 4px,#c89455 4px,#c89455 8px)"></span>Bloqueo Airbnb</span>`
+    +`<span class="cal-legend-item"><span class="sw" style="background:repeating-linear-gradient(45deg,#2a4a7a,#2a4a7a 4px,#3a5d96 4px,#3a5d96 8px)"></span>Bloqueo Booking</span>`
+    +`<span class="cal-legend-item" style="margin-left:auto;color:var(--muted)">↔ Arrastrá una reserva para reprogramar</span>`;
+}
+function tlDateAt(startISO,i){const[y,m,d]=tlIsoParts(startISO);return new Date(y,m,d+i);}
+function tlIdxFrom(startISO,iso){const a=tlIsoParts(startISO),b=tlIsoParts(iso);return Math.round((Date.UTC(b[0],b[1],b[2])-Date.UTC(a[0],a[1],a[2]))/86400000);}
+function renderOcuStats(startISO,nDays){
+  const host=$('ocu-stats'); if(!host)return;
+  const units=DEPTOS.length;
+  // ocupación por día (cantidad de unidades ocupadas)
+  const perDay=new Array(nDays).fill(0);
+  let totNoches=0; const resSet=new Set(); let checkins=0;
+  reservas.forEach(res=>{
+    if(res.estado==='Cancelada'||!DEPTOS.includes(res.depto))return;
+    const s=tlIdxFrom(startISO,res.checkin),e=tlIdxFrom(startISO,res.checkout);
+    const ci=tlIdxFrom(startISO,res.checkin);
+    if(ci>=0&&ci<nDays)checkins++;
+    for(let i=Math.max(0,s);i<Math.min(nDays,e);i++){perDay[i]++;totNoches++;resSet.add(res.id);}
+  });
+  const ocupPct=Math.round(totNoches/(units*nDays)*100);
+  const maxDay=Math.max(units,...perDay);
+  // sparkline (barras)
+  const W=212,H=46,gap=nDays>20?1:2,bw=(W-(nDays-1)*gap)/nDays;
+  let svg=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="display:block">`;
+  const todayIdx=tlIdxFrom(startISO,new Date().toISOString().slice(0,10));
+  for(let i=0;i<nDays;i++){
+    const bh=Math.max(2,Math.round(perDay[i]/maxDay*(H-6)));
+    const x=i*(bw+gap), y=H-bh;
+    const col=i===todayIdx?'#ffd9a0':'rgba(255,255,255,.55)';
+    svg+=`<rect x="${x.toFixed(1)}" y="${y}" width="${bw.toFixed(1)}" height="${bh}" rx="1" fill="${col}"/>`;
+  }
+  svg+=`</svg>`;
+  const cards=[
+    {l:'Ocupación',v:ocupPct+'%',s:units+' unidades'},
+    {l:'Noches ocupadas',v:String(totNoches),s:'en el período'},
+    {l:'Reservas activas',v:String(resSet.size),s:checkins+' check-ins'},
+  ];
+  host.innerHTML=`<div class="ocu-stats-row">
+    ${cards.map(c=>`<div class="ocu-stat"><div class="os-l">${c.l}</div><div class="os-v">${c.v}</div><div class="os-s">${c.s}</div></div>`).join('')}
+    <div class="ocu-spark"><div class="os-l" style="color:rgba(255,255,255,.55)">Ocupación por día</div><div style="margin-top:8px">${svg}</div></div>
+  </div>`;
+}
+const TL_WD=['D','L','M','M','J','V','S'];
+function tlIsoParts(iso){const p=iso.split('-');return[+p[0],+p[1]-1,+p[2]];}
+function tlDayIdx(iso,anio,mes){const[y,m,d]=tlIsoParts(iso);return Math.round((Date.UTC(y,m,d)-Date.UTC(anio,mes,1))/86400000);}
+function tlAddDays(iso,n){const[y,m,d]=tlIsoParts(iso);return new Date(Date.UTC(y,m,d+n)).toISOString().slice(0,10);}
+
+function renderTimeline(){
+  const mes=parseInt($('cal-mes').value),anio=parseInt($('cal-anio').value);
+  const dim=new Date(anio,mes+1,0).getDate();
+  const rows=DEPTOS.length, W=TL_LW+dim*TL_COLW;
+  const todayISO=new Date().toISOString().slice(0,10);
+  const todayIdx=tlDayIdx(todayISO,anio,mes);
+  _tlColW=TL_COLW;
+  renderOcuStats(`${anio}-${String(mes+1).padStart(2,'0')}-01`,dim);
+  let h=`<div style="position:relative;width:${W}px;min-width:${W}px;font-size:0.72rem">`;
+  // header
+  h+=`<div style="position:relative;height:${TL_HEAD}px;border-bottom:1px solid var(--line)">`;
+  h+=`<div style="position:absolute;left:0;top:0;width:${TL_LW}px;height:${TL_HEAD}px;display:flex;align-items:flex-end;padding:0 0 7px 4px;font-size:0.6rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Depto</div>`;
+  for(let i=0;i<dim;i++){const dow=new Date(anio,mes,i+1).getDay();const wk=dow===0||dow===6;const td=i===todayIdx;
+    h+=`<div style="position:absolute;left:${TL_LW+i*TL_COLW}px;top:0;width:${TL_COLW}px;height:${TL_HEAD}px;display:flex;flex-direction:column;align-items:center;justify-content:center;${td?'background:var(--accent-soft);':''}">
+      <span style="font-size:.56rem;text-transform:uppercase;font-weight:600;color:${td?'var(--accent)':(wk?'var(--muted-2)':'var(--muted)')}">${TL_WD[dow]}</span>
+      <span style="font-family:'Fraunces',serif;font-size:.86rem;font-weight:500;line-height:1.1;color:${td?'var(--accent)':'var(--ink)'}">${i+1}</span>
+    </div>`;}
+  h+=`</div>`;
+  // canvas
+  h+=`<div id="tl-canvas" style="position:relative;height:${rows*TL_ROWH}px">`;
+  for(let i=0;i<dim;i++){const dow=new Date(anio,mes,i+1).getDay();const wk=dow===0||dow===6;const td=i===todayIdx;
+    h+=`<div style="position:absolute;left:${TL_LW+i*TL_COLW}px;top:0;width:${TL_COLW}px;height:100%;border-left:1px solid var(--line);${td?'background:var(--accent-soft);':(wk?'background:var(--paper-2);':'')}"></div>`;}
+  DEPTOS.forEach((code,r)=>{
+    h+=`<div style="position:absolute;left:0;right:0;top:${r*TL_ROWH}px;height:${TL_ROWH}px;border-bottom:1px solid var(--line)"></div>`;
+    h+=`<div style="position:absolute;left:0;top:${r*TL_ROWH}px;width:${TL_LW}px;height:${TL_ROWH}px;display:flex;align-items:center;justify-content:center;background:var(--ink);color:var(--paper);font-weight:700;font-size:.7rem;z-index:2">${DN[code]}</div>`;
+  });
+  if(todayIdx>=0&&todayIdx<dim){h+=`<div style="position:absolute;left:${TL_LW+todayIdx*TL_COLW}px;top:0;width:2px;height:100%;background:var(--accent);z-index:3;pointer-events:none"></div>`;}
+  // bloqueos iCal
+  const bloqueos=lo('cn_bloqueos',{});
+  DEPTOS.forEach((code,r)=>{(bloqueos[code]||[]).forEach(b=>{
+    let s=tlDayIdx(b.start,anio,mes),e=tlDayIdx(b.end,anio,mes);
+    if(e<=0||s>=dim)return; s=Math.max(0,s); e=Math.min(dim,e); if(e<=s)return;
+    const plat=b.plat==='Bk'?'Booking':'Airbnb';
+    const stripe=b.plat==='Bk'?'repeating-linear-gradient(45deg,#2a4a7a,#2a4a7a 5px,#3a5d96 5px,#3a5d96 10px)':'repeating-linear-gradient(45deg,#b07a3a,#b07a3a 5px,#c89455 5px,#c89455 10px)';
+    h+=`<div onclick="openBloqPopup('${code}','${b.start}')" title="Bloqueado ${plat}" style="position:absolute;left:${TL_LW+s*TL_COLW+2}px;top:${r*TL_ROWH+(TL_ROWH-TL_BARH)/2}px;width:${(e-s)*TL_COLW-4}px;height:${TL_BARH}px;background:${stripe};border-radius:8px;cursor:pointer;opacity:.88;z-index:9"></div>`;
+  });});
+  // reservas
+  reservas.forEach(res=>{
+    if(res.estado==='Cancelada')return;
+    const r=DEPTOS.indexOf(res.depto); if(r<0)return;
+    let s=tlDayIdx(res.checkin,anio,mes),e=tlDayIdx(res.checkout,anio,mes);
+    if(e<=0||s>=dim)return;
+    const sC=Math.max(0,s),eC=Math.min(dim,e); if(eC<=sC)return;
+    const pend=bloqueaFechas(res);
+    const nm=esc(res.huesped.split(' ')[0].substr(0,12));
+    const left=TL_LW+sC*TL_COLW+2,top=r*TL_ROWH+(TL_ROWH-TL_BARH)/2,w=(eC-sC)*TL_COLW-4;
+    const clip=(s<0?'border-top-left-radius:2px;border-bottom-left-radius:2px;':'')+(e>dim?'border-top-right-radius:2px;border-bottom-right-radius:2px;':'');
+    const dash=res.estado==='Pendiente'||res.estado==='Stand by';
+    h+=`<div class="tl-bar" data-id="${res.id}" onpointerdown="tlDown(event,'${res.id}')" title="${esc(res.huesped)} · ${res.estado}" style="position:absolute;left:${left}px;top:${top}px;width:${w}px;height:${TL_BARH}px;background:${origenColor(res)};${clip}${dash?'opacity:.92;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.55);':''}"><span class="tl-bar-nm">${nm}</span></div>`;
+  });
+  h+=`</div></div>`;
+  $('calendario-grid').innerHTML=h;
+  $('cal-legend').innerHTML=ocuLegendHTML();
+}
+
+let _tlDrag=null;
+function renderTimelineSemana(){
+  if(!_semanaBase)_semanaBase=getLunes(new Date());
+  const s=_semanaBase;
+  const startISO=`${s.getFullYear()}-${String(s.getMonth()+1).padStart(2,'0')}-${String(s.getDate()).padStart(2,'0')}`;
+  const avail=(($('calendario-grid')||{}).clientWidth||980)-TL_LW-6;
+  const colW=Math.max(116,Math.floor(avail/7));
+  _tlColW=colW;
+  renderOcuStats(startISO,7);
+  const nDays=7, rows=DEPTOS.length, W=TL_LW+nDays*colW;
+  const todayISO=new Date().toISOString().slice(0,10);
+  const todayIdx=tlIdxFrom(startISO,todayISO);
+  const HEAD=46;
+  let h=`<div style="position:relative;width:${W}px;min-width:${W}px">`;
+  h+=`<div style="position:relative;height:${HEAD}px;border-bottom:1px solid var(--line)">`;
+  h+=`<div style="position:absolute;left:0;top:0;width:${TL_LW}px;height:${HEAD}px;display:flex;align-items:flex-end;padding:0 0 8px 4px;font-size:0.6rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Depto</div>`;
+  for(let i=0;i<nDays;i++){const dt=tlDateAt(startISO,i),dow=dt.getDay(),wk=dow===0||dow===6,td=i===todayIdx;
+    h+=`<div style="position:absolute;left:${TL_LW+i*colW}px;top:0;width:${colW}px;height:${HEAD}px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;${td?'background:var(--accent-soft);':''}">
+      <span style="font-size:.6rem;text-transform:uppercase;font-weight:700;letter-spacing:.04em;color:${td?'var(--accent)':(wk?'var(--muted-2)':'var(--muted)')}">${['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][dow]}</span>
+      <span style="font-family:'Fraunces',serif;font-size:1rem;font-weight:500;line-height:1;color:${td?'var(--accent)':'var(--ink)'}">${dt.getDate()}/${dt.getMonth()+1}</span>
+    </div>`;}
+  h+=`</div>`;
+  h+=`<div id="tl-canvas" style="position:relative;height:${rows*TL_ROWH}px">`;
+  for(let i=0;i<nDays;i++){const dt=tlDateAt(startISO,i),dow=dt.getDay(),wk=dow===0||dow===6,td=i===todayIdx;
+    h+=`<div style="position:absolute;left:${TL_LW+i*colW}px;top:0;width:${colW}px;height:100%;border-left:1px solid var(--line);${td?'background:var(--accent-soft);':(wk?'background:var(--paper-2);':'')}"></div>`;}
+  DEPTOS.forEach((code,r)=>{
+    h+=`<div style="position:absolute;left:0;right:0;top:${r*TL_ROWH}px;height:${TL_ROWH}px;border-bottom:1px solid var(--line)"></div>`;
+    h+=`<div style="position:absolute;left:0;top:${r*TL_ROWH}px;width:${TL_LW}px;height:${TL_ROWH}px;display:flex;align-items:center;justify-content:center;background:var(--ink);color:var(--paper);font-weight:700;font-size:.7rem;z-index:2">${DN[code]}</div>`;
+  });
+  if(todayIdx>=0&&todayIdx<nDays){h+=`<div style="position:absolute;left:${TL_LW+todayIdx*colW}px;top:0;width:2px;height:100%;background:var(--accent);z-index:3;pointer-events:none"></div>`;}
+  const bloqueos=lo('cn_bloqueos',{});
+  DEPTOS.forEach((code,r)=>{(bloqueos[code]||[]).forEach(b=>{
+    let bs=tlIdxFrom(startISO,b.start),be=tlIdxFrom(startISO,b.end);
+    if(be<=0||bs>=nDays)return; bs=Math.max(0,bs); be=Math.min(nDays,be); if(be<=bs)return;
+    const plat=b.plat==='Bk'?'Booking':'Airbnb';
+    const stripe=b.plat==='Bk'?'repeating-linear-gradient(45deg,#2a4a7a,#2a4a7a 5px,#3a5d96 5px,#3a5d96 10px)':'repeating-linear-gradient(45deg,#b07a3a,#b07a3a 5px,#c89455 5px,#c89455 10px)';
+    h+=`<div onclick="openBloqPopup('${code}','${b.start}')" title="Bloqueado ${plat}" style="position:absolute;left:${TL_LW+bs*colW+2}px;top:${r*TL_ROWH+(TL_ROWH-TL_BARH)/2}px;width:${(be-bs)*colW-4}px;height:${TL_BARH}px;background:${stripe};border-radius:8px;cursor:pointer;opacity:.88;z-index:9"></div>`;
+  });});
+  reservas.forEach(res=>{
+    if(res.estado==='Cancelada')return;
+    const r=DEPTOS.indexOf(res.depto); if(r<0)return;
+    let bs=tlIdxFrom(startISO,res.checkin),be=tlIdxFrom(startISO,res.checkout);
+    if(be<=0||bs>=nDays)return;
+    const sC=Math.max(0,bs),eC=Math.min(nDays,be); if(eC<=sC)return;
+    const nm=esc(res.huesped.split(' ')[0].substr(0,16));
+    const left=TL_LW+sC*colW+2,top=r*TL_ROWH+(TL_ROWH-TL_BARH)/2,w=(eC-sC)*colW-4;
+    const clip=(bs<0?'border-top-left-radius:2px;border-bottom-left-radius:2px;':'')+(be>nDays?'border-top-right-radius:2px;border-bottom-right-radius:2px;':'');
+    const dash=res.estado==='Pendiente'||res.estado==='Stand by';
+    h+=`<div class="tl-bar" data-id="${res.id}" onpointerdown="tlDown(event,'${res.id}')" title="${esc(res.huesped)} · ${res.estado}" style="position:absolute;left:${left}px;top:${top}px;width:${w}px;height:${TL_BARH}px;background:${origenColor(res)};${clip}${dash?'opacity:.92;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.55);':''}"><span class="tl-bar-nm" style="font-size:.78rem">${nm}</span></div>`;
+  });
+  h+=`</div></div>`;
+  $('calendario-grid').innerHTML=h;
+  $('cal-legend').innerHTML=ocuLegendHTML();
+}
+function tlDown(e,id){
+  const res=reservas.find(x=>x.id===id); if(!res)return;
+  const bar=e.currentTarget;
+  e.preventDefault();
+  _tlDrag={id,bar,startX:e.clientX,moved:false,origLeft:parseFloat(bar.style.left),curDelta:0,curRow:DEPTOS.indexOf(res.depto)};
+  try{bar.setPointerCapture(e.pointerId);}catch(_){}
+  bar.style.zIndex=20; bar.style.cursor='grabbing'; bar.style.transition='none'; bar.style.boxShadow='0 12px 26px -6px rgba(60,30,0,.5)';
+  window.addEventListener('pointermove',tlMove);
+  window.addEventListener('pointerup',tlUp);
+}
+function tlMove(e){
+  const d=_tlDrag; if(!d)return;
+  const dx=e.clientX-d.startX;
+  if(Math.abs(dx)>4)d.moved=true;
+  const canvas=$('tl-canvas'); if(!canvas)return;
+  const rect=canvas.getBoundingClientRect();
+  let row=Math.floor((e.clientY-rect.top)/TL_ROWH); row=Math.max(0,Math.min(DEPTOS.length-1,row));
+  if(row!==d.curRow)d.moved=true;
+  const dd=Math.round(dx/_tlColW);
+  d.curDelta=dd; d.curRow=row;
+  d.bar.style.left=(d.origLeft+dd*_tlColW)+'px';
+  d.bar.style.top=(row*TL_ROWH+(TL_ROWH-TL_BARH)/2)+'px';
+  d.bar.style.background=DC[DEPTOS[row]];
+}
+function tlUp(){
+  const d=_tlDrag; if(!d)return;
+  window.removeEventListener('pointermove',tlMove);
+  window.removeEventListener('pointerup',tlUp);
+  _tlDrag=null;
+  if(!d.moved){ openCalPopup(d.id); renderCalendario(); return; }
+  if(cu!=='admin'){ toast('Solo el admin puede mover reservas',false); renderCalendario(); return; }
+  const res=reservas.find(x=>x.id===d.id); if(!res){renderCalendario();return;}
+  const dd=d.curDelta||0, newDepto=DEPTOS[d.curRow];
+  if(dd===0 && newDepto===res.depto){ renderCalendario(); return; }
+  const newCI=tlAddDays(res.checkin,dd), newCO=tlAddDays(res.checkout,dd);
+  const conf=reservas.find(x=>x.id!==res.id && x.depto===newDepto && bloqueaFechas(x) && !(newCO<=x.checkin||newCI>=x.checkout));
+  if(conf && !(newCI===conf.checkout||newCO===conf.checkin)){ toast('Superposición con '+conf.huesped+' en '+DN[newDepto],false); renderCalendario(); return; }
+  res.depto=newDepto; res.checkin=newCI; res.checkout=newCO;
+  reservas=reservas.map(x=>x.id===res.id?res:x);
+  saveOneReserva(res);
+  renderCalendario();
+  toast(DN[newDepto]+' · '+fmtD(newCI)+' → '+fmtD(newCO)+' ✓');
+}
+
 function openCalPopup(id){
   const r=reservas.find(x=>x.id===id);if(!r)return;
   const c=calc(r);
@@ -1805,10 +2064,12 @@ function renderRendimiento(){
   const EXCLUIR_R=['Cancelada','Cortesía','Non show','Stand by','Devolución'];
   const fil=reservas.filter(r=>{if(EXCLUIR_R.includes(r.estado))return false;const d=new Date(r.checkin);if(hm&&(d.getMonth()!==mes||d.getFullYear()!==ay))return false;if(!hm&&d.getFullYear()!==ay)return false;return true;});
   let ts=0,ta=0,tn=0,tg=0,tl=0,tno=0;
+  const depData=[];
   const rows=DEPTOS.map(code=>{
     const dr=fil.filter(r=>r.depto===code);let s=0,a=0,n=0,g=0,l=0,no=0;
     dr.forEach(r=>{const c=calc(r);s+=c.sub;a+=c.air;n+=c.net;g+=c.ges;l+=c.liq;no+=c.n;});
     ts+=s;ta+=a;tn+=n;tg+=g;tl+=l;tno+=no;
+    depData.push({code,count:dr.length,no,s,l});
     return`<tr>
       <td><span class="depto-tag" style="background:${DC[code]}">${DN[code]}</span></td>
       <td style="text-align:center">${dr.length}</td><td style="text-align:center;font-weight:600">${no}</td>
@@ -1824,29 +2085,56 @@ function renderRendimiento(){
   $('tabla-rendimiento').innerHTML=rows.join('');
   const gf=gastos.filter(g=>{const d=new Date(g.fecha);if(hm&&(d.getMonth()!==mes||d.getFullYear()!==ay))return false;if(!hm&&d.getFullYear()!==ay)return false;return true;});
   const tgas=gf.reduce((s,g)=>s+g.monto,0);
+  const neto=tl-tgas;
+  const maxLiq=Math.max(1,...depData.map(d=>d.l));
+  // KPI cards
+  const kpis=[
+    {l:'Ingresos Brutos',v:fmt(ts),s:fil.length+' reservas',dark:false,sc:'var(--muted)'},
+    {l:'Líquido Propietario',v:fmt(tl),s:tno+' noches',dark:false,sc:'var(--ok)'},
+    {l:'Gastos del período',v:fmt(tgas),s:gf.length+' registros',dark:false,sc:'var(--err)'},
+    {l:'Resultado Neto',v:fmt(neto),s:ts?('margen '+Math.round(neto/ts*100)+'%'):'—',dark:true,sc:'var(--accent-2)'},
+  ];
+  const kpiHTML=kpis.map(k=>`<div class="rend-kpi${k.dark?' dark':''}">
+    <div class="rk-l">${k.l}</div><div class="rk-v">${k.v}</div><div class="rk-s" style="color:${k.dark?'#ff9d6b':k.sc}">${k.s}</div></div>`).join('');
+  // chart
+  const chartHTML=depData.map(d=>`<div class="rend-bar-row">
+    <div class="rb-name"><span class="sw" style="background:${DC[d.code]}"></span>${DN[d.code]}</div>
+    <div class="rb-track"><div class="rb-fill" style="width:${Math.max(2,Math.round(d.l/maxLiq*100))}%;background:${DC[d.code]}"></div></div>
+    <div class="rb-val">${fmt(d.l)}</div></div>`).join('');
+  // breakdown items (right column)
+  let breakdown=`
+    <div class="rend-bd-item"><span>Comisión Airbnb</span><b style="color:var(--err)">${fmt(ta)}</b></div>
+    <div class="rend-bd-item"><span>Comisión Gestión 12%</span><b style="color:var(--warn)">${fmt(tg)}</b></div>
+    <div class="rend-bd-item"><span>Neto operativo</span><b>${fmt(tn)}</b></div>
+    <div class="rend-bd-item"><span>Ticket promedio</span><b>${fil.length?fmt(ts/fil.length):'—'}</b></div>`;
+  const bkShown=fil.filter(r=>r.plataforma==='Booking'&&r.estado==='Shown');
+  const bkDeuda=bkShown.reduce((s,r)=>s+calc(r).bkCom,0);
+  if(bkDeuda)breakdown+=`<div class="rend-bd-item" style="border-left:3px solid var(--warn);padding-left:10px"><span>⚠️ Deuda Booking 15% · ${bkShown.length}</span><b style="color:var(--warn)">${fmt(bkDeuda)}</b></div>`;
+  const destinos={};
+  fil.forEach(r=>{const d=r.destino||'Sin especificar';destinos[d]=(destinos[d]||0)+calc(r).liq;});
+  const dKeys=Object.keys(destinos);
+  let destHTML='';
+  if(dKeys.length)destHTML=`<div class="rend-card" style="padding:18px 22px">
+    <div class="rend-bd-title">Líquido por destino de cobro</div>
+    ${dKeys.map(k=>`<div class="rend-bd-item"><span>${esc(k)}</span><b style="color:var(--purple)">${fmt(destinos[k])}</b></div>`).join('')}</div>`;
   $('rend-totals').innerHTML=`
-    <div class="totals-item"><div class="tl">Ingresos Brutos</div><div class="tv">${fmt(ts)}</div></div>
-    <div class="totals-item"><div class="tl">Com. Airbnb</div><div class="tv" style="color:var(--err)">${fmt(ta)}</div></div>
-    <div class="totals-item"><div class="tl">Com. Gestión 12%</div><div class="tv" style="color:var(--warn)">${fmt(tg)}</div></div>
-    <div class="totals-item"><div class="tl">Líquido Propietario</div><div class="tv" style="color:var(--ok)">${fmt(tl)}</div></div>
-    <div class="totals-item"><div class="tl">Gastos</div><div class="tv" style="color:var(--err)">${fmt(tgas)}</div></div>
-    <div class="totals-item"><div class="tl">Noches Ocupadas</div><div class="tv">${tno}</div></div>
-    <div class="totals-item"><div class="tl">Reservas</div><div class="tv">${fil.length}</div></div>
-    <div class="totals-item highlight"><div class="tl">Resultado Neto</div><div class="tv">${fmt(tl-tgas)}</div></div>
-    ${(()=>{
-      const bkShown=fil.filter(r=>r.plataforma==='Booking'&&r.estado==='Shown');
-      const bkDeuda=bkShown.reduce((s,r)=>s+calc(r).bkCom,0);
-      if(!bkDeuda)return'';
-      return`<div class="totals-item" style="border-left:3px solid #f59e0b;padding-left:12px;margin-top:8px"><div class="tl">⚠️ Deuda Booking (15%)</div><div class="tv" style="color:#f59e0b">${fmt(bkDeuda)}</div></div><div style="font-size:0.72rem;color:var(--muted);margin-top:4px">${bkShown.length} reserva${bkShown.length>1?'s':''} con estado Shown</div>`;
-    })()}
-    ${(()=>{
-      const destinos={};
-      fil.forEach(r=>{const d=r.destino||'Sin especificar';if(!destinos[d])destinos[d]=0;destinos[d]+=calc(r).liq;});
-      const keys=Object.keys(destinos);
-      if(!keys.length)return'';
-      return'<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--cream2)"><div style="font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Líquido por destino de cobro</div>'+
-      keys.map(k=>`<div class="totals-item"><div class="tl">${k}</div><div class="tv" style="color:var(--navy)">${fmt(destinos[k])}</div></div>`).join('')+'</div>';
-    })()}`;
+    <div class="rend-kpi-grid">${kpiHTML}</div>
+    <div class="rend-split">
+      <div class="rend-card">
+        <div class="rend-card-title">Ingresos por unidad</div>
+        <div class="rend-card-sub">Líquido del período · ${DEPTOS.length} unidades</div>
+        <div style="margin-top:16px">${chartHTML}</div>
+      </div>
+      <div class="rend-right">
+        <div class="rend-card dark">
+          <div class="rk-l" style="color:rgba(255,255,255,.55)">Resultado neto del período</div>
+          <div style="font-family:'Fraunces',serif;font-size:2.2rem;font-weight:600;color:#fff;letter-spacing:-.02em;margin:8px 0 2px">${fmt(neto)}</div>
+          <div style="font-size:.78rem;color:#ff9d6b;font-weight:600">${ts?('margen '+Math.round(neto/ts*100)+'% · '+tno+' noches'):'—'}</div>
+        </div>
+        <div class="rend-card" style="padding:18px 22px">${breakdown}</div>
+        ${destHTML}
+      </div>
+    </div>`;
 }
 function exportRendimiento(){
   const mv=$('rend-mes').value,ay=parseInt($('rend-anio').value);
