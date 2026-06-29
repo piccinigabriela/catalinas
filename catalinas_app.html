@@ -848,7 +848,7 @@ html.dark .rend-card.dark .rk-l{color:rgba(243,233,214,.55);}
 
 <script>
 // ── CONSTANTS ──
-const DEFAULT_PINS={admin:'1234',dueno:'2345',admin_e:'3456',mant:'4567'};
+const DEFAULT_PINS={admin:'1535',dueno:'2345',admin_e:'3456',mant:'4567'};
 const USER_META={
   admin:{name:'Administrador',role:'Acceso total'},
   dueno:{name:'Propietario',role:'Solo lectura'},
@@ -859,7 +859,7 @@ const NAV_CONFIG={
   admin:['dashboard','nueva-reserva','reservas','ocupacion','gastos','rendimiento','avisos','huespedes','config'],
   dueno:['ocupacion','gastos','rendimiento'],
   admin_e:['ocupacion','avisos'],
-  mant:['avisos']
+  mant:['avisos','ocupacion']
 };
 const NAV_META={
   'dashboard':{icon:'i-dashboard',label:'Hoy',sec:'Principal'},
@@ -876,7 +876,7 @@ const MOBILE_NAV={
   admin:['rendimiento','nueva-reserva','ocupacion','avisos','reservas'],
   dueno:['ocupacion','gastos','rendimiento'],
   admin_e:['ocupacion','avisos'],
-  mant:['avisos']
+  mant:['avisos','ocupacion']
 };
 const DC={D01:'#2e5d8a',D02:'#3e5b2a',D03:'#a85828',D04:'#5d3d7a',D05:'#9a3a2e',D06:'#24324f',D07:'#6e3a18'};
 const DN={D01:'PB5',D02:'1A',D03:'2C',D04:'2D',D05:'PR1',D06:'PR2',D07:'1B'};
@@ -1830,6 +1830,13 @@ function renderTimelineSemana(){
   $('cal-legend').innerHTML=ocuLegendHTML();
 }
 function tlDown(e,id){
+  // En mobile abrimos el popup en vez de drag
+  if(e.pointerType==='touch'){
+    e.preventDefault();
+    const res=reservas.find(x=>x.id===id); if(!res)return;
+    openCalPopup(id, res.checkin);
+    return;
+  }
   const res=reservas.find(x=>x.id===id); if(!res)return;
   const bar=e.currentTarget;
   e.preventDefault();
