@@ -154,7 +154,12 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
 .btn-row{display:flex;gap:10px;margin-top:22px;justify-content:flex-end;flex-wrap:wrap;}
 
 .table-wrap{overflow-x:auto;}
-.table-scroll-mirror{overflow-x:auto;overflow-y:hidden;height:14px;position:fixed;bottom:0;left:0;right:0;z-index:50;background:var(--surface);border-top:2px solid var(--line-1);display:none;}
+.table-scroll-mirror{overflow-x:scroll;overflow-y:hidden;height:22px;position:fixed;bottom:0;left:0;right:0;z-index:50;background:var(--surface);border-top:2px solid var(--line-2);box-shadow:0 -4px 14px -8px rgba(80,55,20,.4);display:none;}
+.table-scroll-mirror::-webkit-scrollbar{height:22px;}
+.table-scroll-mirror::-webkit-scrollbar-track{background:var(--paper-2);}
+.table-scroll-mirror::-webkit-scrollbar-thumb{background:var(--accent);border-radius:11px;border:5px solid var(--paper-2);}
+.table-scroll-mirror::-webkit-scrollbar-thumb:hover{background:var(--accent-2);}
+.table-scroll-mirror{scrollbar-width:auto;scrollbar-color:var(--accent) var(--paper-2);}
 .table-scroll-mirror-inner{height:1px;}
 table{width:100%;border-collapse:collapse;font-size:0.83rem;}
 thead tr{border-bottom:1px solid var(--line-2);}
@@ -408,7 +413,7 @@ html.dark .xenia-input{background:var(--paper-3);}
 .ocu-spark .os-v{color:#fff;}
 @media(max-width:860px){.ocu-stats-row{grid-template-columns:1fr 1fr;}.ocu-spark{grid-column:1/-1;}.ocu-spark svg{width:100%;height:auto;}}
 /* ── RENDIMIENTO premium ── */
-.rend-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-bottom:18px;}
+.rend-kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:13px;margin-bottom:18px;}
 #rend-totals{display:block;}
 .rend-kpi{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px 20px;box-shadow:var(--shadow-1);}
 .rend-kpi.dark{background:var(--ink);border-color:var(--ink);}
@@ -536,7 +541,7 @@ html.dark .rend-card.dark .rk-l{color:rgba(243,233,214,.55);}
           <div class="card-title"><div class="dot"></div>Datos</div>
           <div class="form-grid">
             <div class="form-group"><label>Departamento</label>
-              <select id="r-depto"><option value="">— Seleccioná —</option><option value="D01">PB5</option><option value="D02">1A</option><option value="D03">2C</option><option value="D04">2D</option><option value="D05">PR1</option><option value="D06">PR2</option><option value="D07">1B</option></select>
+              <select id="r-depto"><option value="">— Seleccioná —</option><option value="D02">1A</option><option value="D03">2C</option><option value="D04">2D</option><option value="D07">1B</option></select>
             </div>
             <div class="form-group"><label>Huésped</label><input type="text" id="r-huesped" placeholder="Nombre completo"></div>
             <div class="form-group"><label>Nacionalidad</label><input type="text" id="r-nac" placeholder="Ej: Estadounidense"></div>
@@ -576,7 +581,7 @@ html.dark .rend-card.dark .rk-l{color:rgba(243,233,214,.55);}
         <div class="section-sub">Historial completo</div>
         <div class="filter-row">
           <label>Depto</label>
-          <select id="fil-depto"><option value="">Todos</option><option value="D01">PB5</option><option value="D02">1A</option><option value="D03">2C</option><option value="D04">2D</option><option value="D05">PR1</option><option value="D06">PR2</option><option value="D07">1B</option></select>
+          <select id="fil-depto"><option value="">Todos</option><option value="D02">1A</option><option value="D03">2C</option><option value="D04">2D</option><option value="D07">1B</option></select>
           <label>Estado</label>
           <select id="fil-estado"><option value="">Todos</option><option value="Confirmada">Confirmada</option><option value="Pendiente">Pendiente</option><option value="Stand by">Stand by</option><option value="Shown">Shown</option><option value="Non show">Non show</option><option value="Cancelada">Cancelada</option><option value="Cortesía">Cortesía</option><option value="Devolución">Devolución</option></select>
           <input type="text" id="fil-nombre" placeholder="🔍 Buscar huésped..." style="padding:6px 12px;border:1px solid var(--line);border-radius:var(--r);font-size:0.82rem;color:var(--text);background:var(--white);min-width:180px;" oninput="renderReservas()">
@@ -632,7 +637,7 @@ html.dark .rend-card.dark .rk-l{color:rgba(243,233,214,.55);}
           <div class="form-grid">
             <div class="form-group"><label>Fecha</label><input type="date" id="g-fecha"></div>
             <div class="form-group"><label>Depto</label>
-              <select id="g-depto"><option value="General">General</option><option value="D01">PB5</option><option value="D02">1A</option><option value="D03">2C</option><option value="D04">2D</option><option value="D05">PR1</option><option value="D06">PR2</option><option value="D07">1B</option></select>
+              <select id="g-depto"><option value="General">General</option><option value="D02">1A</option><option value="D03">2C</option><option value="D04">2D</option><option value="D07">1B</option></select>
             </div>
             <div class="form-group"><label>Categoría</label>
               <select id="g-categoria"><option>Limpieza</option><option>Mantenimiento</option><option>Servicios</option><option>Seguros</option><option>Impuestos</option><option>Otros</option></select>
@@ -748,7 +753,7 @@ html.dark .rend-card.dark .rk-l{color:rgba(243,233,214,.55);}
     <div class="modal-title">Editar Reserva</div>
     <div class="form-grid">
       <div class="form-group"><label>Departamento</label>
-        <select id="e-depto"><option value="D01">PB5</option><option value="D02">1A</option><option value="D03">2C</option><option value="D04">2D</option><option value="D05">PR1</option><option value="D06">PR2</option><option value="D07">1B</option></select>
+        <select id="e-depto"><option value="D02">1A</option><option value="D03">2C</option><option value="D04">2D</option><option value="D07">1B</option></select>
       </div>
       <div class="form-group"><label>Huésped</label><input type="text" id="e-huesped"></div>
       <div class="form-group"><label>Nacionalidad</label><input type="text" id="e-nac"></div>
@@ -875,7 +880,7 @@ const MOBILE_NAV={
 };
 const DC={D01:'#2e5d8a',D02:'#3e5b2a',D03:'#a85828',D04:'#5d3d7a',D05:'#9a3a2e',D06:'#24324f',D07:'#6e3a18'};
 const DN={D01:'PB5',D02:'1A',D03:'2C',D04:'2D',D05:'PR1',D06:'PR2',D07:'1B'};
-const DEPTOS=['D02','D07','D03','D04','D05','D06','D01'];
+const DEPTOS=['D02','D07','D03','D04'];
 
 // ── SUPABASE ──
 const SB_URL='https://vnfgitgadadjjjciftsa.supabase.co';
@@ -1301,7 +1306,7 @@ function badgeClass(estado){
 function renderReservas(){
   const ia=cu==='admin',fd=$('fil-depto').value,fe=$('fil-estado').value;
   const fn=($('fil-nombre')?.value||'').toLowerCase().trim();
-  const data=reservas.filter(r=>(!fd||r.depto===fd)&&(!fe||r.estado===fe)&&(!fn||r.huesped.toLowerCase().includes(fn))).sort((a,b)=>new Date(b.creado)-new Date(a.creado));
+  const data=reservas.filter(r=>DEPTOS.includes(r.depto)&&(!fd||r.depto===fd)&&(!fe||r.estado===fe)&&(!fn||r.huesped.toLowerCase().includes(fn))).sort((a,b)=>new Date(b.creado)-new Date(a.creado));
   const tb=$('tabla-reservas');
   if(!data.length){tb.innerHTML=`<tr><td colspan="16" style="text-align:center;padding:40px;color:var(--muted)">Sin reservas</td></tr>`;return;}
   tb.innerHTML=data.map((r,i)=>{const c=calc(r);const senia=r.senia||0,saldo=r.saldo||0,pend=Math.max(0,c.sub-senia-saldo);
@@ -1322,6 +1327,7 @@ function renderReservas(){
       <td>${ia?`<div style="display:flex;gap:6px"><button class="btn btn-outline btn-sm" onclick="abrirFichaRes('${r.id}')" title="Ver ficha" style="padding:3px 7px;font-size:11px">📋</button><button class="btn-icon-sm" onclick="editRes('${r.id}')" aria-label="Editar"><svg><use href="#i-edit"/></svg></button><button class="btn-icon-sm danger" onclick="delRes('${r.id}')" aria-label="Eliminar"><svg><use href="#i-close"/></svg></button>${r.tel?`<button class="btn-icon-sm btn-wa" onclick="waMsgHuesped('${r.id}')" title="WhatsApp al huésped" style="background:#128c5e;border-color:#128c5e"><svg><use href="#i-wa"/></svg></button>`:''}</div>`:''}</td>
     </tr>`;
   }).join('');
+  if(window.__resScrollRefresh) setTimeout(window.__resScrollRefresh, 30);
 }
 // ── FICHA DETALLE DE RESERVA ──────────────────────────────────────────
 function abrirFichaRes(id){
@@ -1371,7 +1377,7 @@ function exportReservas(){
 }
 function exportReservasPDF(){
   const fd=$('fil-depto').value,fe=$('fil-estado').value;
-  const data=reservas.filter(r=>(!fd||r.depto===fd)&&(!fe||r.estado===fe)).sort((a,b)=>a.checkin.localeCompare(b.checkin));
+  const data=reservas.filter(r=>DEPTOS.includes(r.depto)&&(!fd||r.depto===fd)&&(!fe||r.estado===fe)).sort((a,b)=>a.checkin.localeCompare(b.checkin));
   if(!data.length){toast('No hay reservas para exportar',false);return;}
   const {jsPDF}=window.jspdf;
   const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
@@ -2090,6 +2096,7 @@ function renderRendimiento(){
   // KPI cards
   const kpis=[
     {l:'Ingresos Brutos',v:fmt(ts),s:fil.length+' reservas',dark:false,sc:'var(--muted)'},
+    {l:'Comisión Gestión',v:fmt(tg),s:(tn?Math.round(tg/tn*100):12)+'% sobre neto',dark:false,sc:'var(--warn)'},
     {l:'Líquido Propietario',v:fmt(tl),s:tno+' noches',dark:false,sc:'var(--ok)'},
     {l:'Gastos del período',v:fmt(tgas),s:gf.length+' registros',dark:false,sc:'var(--err)'},
     {l:'Resultado Neto',v:fmt(neto),s:ts?('margen '+Math.round(neto/ts*100)+'%'):'—',dark:true,sc:'var(--accent-2)'},
@@ -2243,10 +2250,7 @@ function renderAvisos(){
       </div>
       <div class="aviso-footer">
         <span class="aviso-footer-label">Checklist:</span>
-        <label class="aviso-check"><input type="checkbox"> Admin</label>
-        <label class="aviso-check"><input type="checkbox"> Mant.</label>
-        <label class="aviso-check"><input type="checkbox"> Limpieza</label>
-        <label class="aviso-check"><input type="checkbox"> Acceso</label>
+        <label class="aviso-check"><input type="checkbox"> Mantenimiento</label>
         <div class="wa-btns">
           <button class="btn btn-sm btn-wa" onclick="waMsg('${r.id}','admin_e')"><svg><use href="#i-wa"/></svg>Admin</button>
           <button class="btn btn-sm btn-wa" onclick="waMsg('${r.id}','mant')"><svg><use href="#i-wa"/></svg>Mant.</button>
@@ -2260,22 +2264,24 @@ function renderAvisos(){
 // ── HOY (ex Dashboard) ──
 function renderHoy(){
   const today=new Date().toISOString().split('T')[0];
-  const act=reservas.filter(r=>r.estado!=='Cancelada'&&r.checkin<=today&&r.checkout>today);
+  const inDep=r=>DEPTOS.includes(r.depto);
+  const act=reservas.filter(r=>inDep(r)&&r.estado!=='Cancelada'&&r.checkin<=today&&r.checkout>today);
   const m=new Date().getMonth(),y=new Date().getFullYear();
   const EXCLUIR_REND=['Cancelada','Cortesía','Non show','Stand by','Devolución'];
-  const em=reservas.filter(r=>{const d=new Date(r.checkin);return !EXCLUIR_REND.includes(r.estado)&&d.getMonth()===m&&d.getFullYear()===y;});
+  const em=reservas.filter(r=>{const d=new Date(r.checkin);return inDep(r)&&!EXCLUIR_REND.includes(r.estado)&&d.getMonth()===m&&d.getFullYear()===y;});
   const ing=em.reduce((s,r)=>s+calc(r).liq,0);
+  const totalMes=em.reduce((s,r)=>s+calc(r).sub,0);
   const nochesM=em.reduce((s,r)=>s+calc(r).n,0);
   const promNoches=em.length?Math.round(nochesM/em.length*10)/10:0;
   const in7=new Date(Date.now()+7*86400000).toISOString().split('T')[0];
-  const pr=reservas.filter(r=>r.estado!=='Cancelada'&&r.checkin>=today&&r.checkin<=in7);
-  const ciHoy=reservas.filter(r=>r.estado!=='Cancelada'&&r.checkin===today).sort((a,b)=>a.depto.localeCompare(b.depto));
-  const coHoy=reservas.filter(r=>r.estado!=='Cancelada'&&r.checkout===today).sort((a,b)=>a.depto.localeCompare(b.depto));
+  const pr=reservas.filter(r=>inDep(r)&&r.estado!=='Cancelada'&&r.checkin>=today&&r.checkin<=in7);
+  const ciHoy=reservas.filter(r=>inDep(r)&&r.estado!=='Cancelada'&&r.checkin===today).sort((a,b)=>a.depto.localeCompare(b.depto));
+  const coHoy=reservas.filter(r=>inDep(r)&&r.estado!=='Cancelada'&&r.checkout===today).sort((a,b)=>a.depto.localeCompare(b.depto));
   const fiveAgo=new Date(Date.now()-5*86400000).toISOString().split('T')[0];
-  const aLimpiar=reservas.filter(r=>r.estado!=='Cancelada'&&!r.limpio&&r.checkout>=fiveAgo&&r.checkout<=today).sort((a,b)=>a.checkout.localeCompare(b.checkout));
+  const aLimpiar=reservas.filter(r=>inDep(r)&&r.estado!=='Cancelada'&&!r.limpio&&r.checkout>=fiveAgo&&r.checkout<=today).sort((a,b)=>a.checkout.localeCompare(b.checkout));
   $('stats-grid').innerHTML=`
-    <div class="stat-card"><div class="stat-label">Ocupados Hoy</div><div class="stat-value">${act.length}<span style="font-size:1rem;color:var(--muted-2);font-weight:400;margin-left:2px">/7</span></div><div class="stat-sub">Deptos activos</div></div>
-    <div class="stat-card"><div class="stat-label">Ingresos Mes</div><div class="stat-value sm">${fmt(ing)}</div><div class="stat-sub">Líquido prop. mes actual</div></div>
+    <div class="stat-card"><div class="stat-label">Ocupados Hoy</div><div class="stat-value">${act.length}<span style="font-size:1rem;color:var(--muted-2);font-weight:400;margin-left:2px">/${DEPTOS.length}</span></div><div class="stat-sub">Deptos activos</div></div>
+    <div class="stat-card"><div class="stat-label">Ingresos Mes</div><div class="stat-value sm">${fmt(totalMes)}</div><div class="stat-sub">Total facturado · neto prop. ${fmt(ing)}</div></div>
     <div class="stat-card"><div class="stat-label">Noches Mes</div><div class="stat-value">${nochesM}<span style="font-size:.85rem;color:var(--muted);margin-left:6px;font-weight:400">~${promNoches}x</span></div><div class="stat-sub">Vendidas · prom. por reserva</div></div>
     <div class="stat-card"><div class="stat-label">Check-ins 7d</div><div class="stat-value">${pr.length}</div><div class="stat-sub">Próximas llegadas</div></div>`;
   const isAdm=cu==='admin';
@@ -2290,7 +2296,7 @@ function renderHoy(){
   $('proximos-checkins').innerHTML=ps.length
     ?ps.map(r=>`<div class="dash-item"><div class="dash-item-left"><span class="depto-tag" style="background:${DC[r.depto]}">${DN[r.depto]}</span><span class="dash-item-name">${esc(r.huesped)}</span></div><span class="dash-item-meta">${fmtD(r.checkin)}</span></div>`).join('')
     :`<div class="empty-state" style="padding:24px"><svg><use href="#i-inbox"/></svg><p>Sin check-ins próximos</p></div>`;
-  const ul=[...reservas].sort((a,b)=>b.creado.localeCompare(a.creado)).slice(0,5);
+  const ul=[...reservas].filter(r=>DEPTOS.includes(r.depto)).sort((a,b)=>b.creado.localeCompare(a.creado)).slice(0,5);
   $('ultimas-reservas').innerHTML=ul.length
     ?ul.map(r=>`<div class="dash-item"><div class="dash-item-left"><span class="depto-tag" style="background:${DC[r.depto]}">${DN[r.depto]}</span><span class="dash-item-name">${esc(r.huesped)}</span></div><span class="badge ${badgeClass(r.estado)}">${r.estado}</span></div>`).join('')
     :`<div class="empty-state" style="padding:24px"><svg><use href="#i-inbox"/></svg><p>Cargá tu primera reserva</p></div>`;
@@ -3049,6 +3055,7 @@ Respondé basándote en los datos reales y en el conocimiento de la app.`;
       if(visible) syncWidth();
     }
 
+    window.__resScrollRefresh = ()=>{ syncWidth(); checkVisibility(); };
     syncWidth();
     wrap.addEventListener('scroll', ()=>{ mirror.scrollLeft = wrap.scrollLeft; });
     mirror.addEventListener('scroll', ()=>{ wrap.scrollLeft = mirror.scrollLeft; });
