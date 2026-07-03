@@ -421,11 +421,12 @@ html.dark .xenia-input{background:var(--paper-3);}
 .rend-kpi.dark .rk-l{color:rgba(255,255,255,.55);}
 .rk-v{font-family:'Fraunces',serif;font-size:1.55rem;font-weight:600;letter-spacing:-.02em;margin:7px 0 3px;line-height:1;}
 .rend-kpi.dark .rk-v{color:#fff;}
-html.dark .rend-kpi.dark .rk-v{color:var(--ink);}
+html.dark .rend-kpi.dark .rk-v{color:#fff;}
 .rk-s{font-size:.72rem;font-weight:600;}
 .rend-split{display:grid;grid-template-columns:1.25fr 1fr;gap:14px;align-items:start;}
 .rend-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:22px 24px;box-shadow:var(--shadow-1);}
-.rend-card.dark{background:var(--ink);border-color:var(--ink);}
+.rend-card.dark{background:#1a1a2e;border-color:#1a1a2e;}
+html.dark .rend-card.dark{background:#1a1a2e;border-color:#222240;}
 html.dark .rend-card.dark .rk-l{color:rgba(243,233,214,.55);}
 .rend-card-title{font-family:'Fraunces',serif;font-size:1.05rem;font-weight:600;}
 .rend-card-sub{font-size:.76rem;color:var(--muted);margin-top:3px;}
@@ -434,8 +435,11 @@ html.dark .rend-card.dark .rk-l{color:rgba(243,233,214,.55);}
 .rb-name{width:88px;font-size:.78rem;font-weight:600;color:var(--ink-2);display:flex;align-items:center;gap:7px;flex-shrink:0;}
 .rb-name .sw{width:9px;height:9px;border-radius:3px;flex-shrink:0;}
 .rb-track{flex:1;height:22px;background:var(--paper-2);border-radius:7px;overflow:hidden;}
+html.dark .rb-track{background:rgba(255,255,255,.1);}
 .rb-fill{height:100%;border-radius:7px;transition:width .5s cubic-bezier(.3,.8,.3,1);}
 .rb-val{width:96px;text-align:right;font-size:.78rem;font-weight:700;font-family:'Fraunces',serif;flex-shrink:0;}
+html.dark .rb-val{color:var(--paper);}
+html.dark .rb-name{color:var(--paper);}
 .rend-bd-title{font-size:.66rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;}
 .rend-bd-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:.84rem;}
 .rend-bd-item:last-child{border-bottom:none;}
@@ -2142,7 +2146,7 @@ function renderRendimiento(){
       <div class="rend-right">
         <div class="rend-card dark">
           <div class="rk-l" style="color:rgba(255,255,255,.55)">Resultado neto del período</div>
-          <div style="font-family:'Fraunces',serif;font-size:2.2rem;font-weight:600;color:#fff;letter-spacing:-.02em;margin:8px 0 2px">${fmt(neto)}</div>
+          <div style="font-family:'Fraunces',serif;font-size:2.2rem;font-weight:600;color:#fff;letter-spacing:-.02em;margin:8px 0 2px;text-shadow:0 1px 3px rgba(0,0,0,.4)">${fmt(neto)}</div>
           <div style="font-size:.78rem;color:#ff9d6b;font-weight:600">${ts?('margen '+Math.round(neto/ts*100)+'% · '+tno+' noches'):'—'}</div>
         </div>
         <div class="rend-card" style="padding:18px 22px">${breakdown}</div>
