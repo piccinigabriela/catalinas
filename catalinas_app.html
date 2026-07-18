@@ -164,6 +164,9 @@ select{appearance:none;-webkit-appearance:none;background-image:url("data:image/
 table{width:100%;border-collapse:collapse;font-size:0.83rem;}
 thead tr{border-bottom:1px solid var(--line-2);}
 thead th{color:var(--muted);font-weight:600;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;padding:12px 14px;text-align:left;white-space:nowrap;background:var(--paper-2);}
+th.th-sort{cursor:pointer;user-select:none;}
+th.th-sort:hover{color:var(--text);}
+.sort-arrow{font-size:0.62rem;opacity:0.7;margin-left:3px;}
 thead th:first-child{padding-left:22px;}
 thead th:last-child{padding-right:22px;}
 tbody tr{border-bottom:1px solid var(--line);transition:background .15s;}
@@ -598,7 +601,7 @@ html.dark .rb-name{color:var(--paper);}
         </div>
         <div class="card" style="padding:0;overflow:hidden;">
           <div class="table-wrap" id="res-table-wrap"><table>
-            <thead><tr><th class="res-sticky-1">#</th><th class="res-sticky-2">Depto</th><th class="res-sticky-3">Huésped</th><th>Check-in</th><th>Check-out</th><th>Noches</th><th>USD/N</th><th>Subtotal</th><th>Airbnb</th><th>Neto</th><th>Gestión</th><th>Líquido</th><th>Estado</th><th>Destino</th><th>Seña</th><th>Saldo</th><th></th></tr></thead>
+            <thead><tr><th class="res-sticky-1">#</th><th class="res-sticky-2 th-sort" onclick="sortReservas(1)">Depto<span class="sort-arrow" id="sa-1"></span></th><th class="res-sticky-3 th-sort" onclick="sortReservas(2)">Huésped<span class="sort-arrow" id="sa-2"></span></th><th class="th-sort" onclick="sortReservas(3)">Check-in<span class="sort-arrow" id="sa-3"></span></th><th class="th-sort" onclick="sortReservas(4)">Check-out<span class="sort-arrow" id="sa-4"></span></th><th class="th-sort" onclick="sortReservas(5)">Noches<span class="sort-arrow" id="sa-5"></span></th><th class="th-sort" onclick="sortReservas(6)">USD/N<span class="sort-arrow" id="sa-6"></span></th><th class="th-sort" onclick="sortReservas(7)">Subtotal<span class="sort-arrow" id="sa-7"></span></th><th class="th-sort" onclick="sortReservas(8)">Airbnb<span class="sort-arrow" id="sa-8"></span></th><th class="th-sort" onclick="sortReservas(9)">Neto<span class="sort-arrow" id="sa-9"></span></th><th class="th-sort" onclick="sortReservas(10)">Gestión<span class="sort-arrow" id="sa-10"></span></th><th class="th-sort" onclick="sortReservas(11)">Líquido<span class="sort-arrow" id="sa-11"></span></th><th class="th-sort" onclick="sortReservas(12)">Estado<span class="sort-arrow" id="sa-12"></span></th><th class="th-sort" onclick="sortReservas(13)">Destino<span class="sort-arrow" id="sa-13"></span></th><th class="th-sort" onclick="sortReservas(14)">Seña<span class="sort-arrow" id="sa-14"></span></th><th class="th-sort" onclick="sortReservas(15)">Saldo<span class="sort-arrow" id="sa-15"></span></th><th></th></tr></thead>
             <tbody id="tabla-reservas"></tbody>
           </table></div>
           <div class="table-scroll-mirror" id="res-scroll-mirror"><div class="table-scroll-mirror-inner" id="res-scroll-inner"></div></div>
@@ -1299,6 +1302,40 @@ function guardarReserva(){
 function clearReservaForm(){['r-depto','r-huesped','r-nac','r-tel','r-checkin','r-checkout','r-precio','r-notas'].forEach(id=>{const e=$(id);if(e){e.value='';delete e.dataset.modified;}});['r-early','r-late'].forEach(id=>{const e=$(id);if(e)e.checked=false;});['cp-noches','cp-subtotal','cp-airbnb','cp-neto','cp-gestion','cp-liquido'].forEach(id=>$(id).textContent='—');const b=$('temporada-badge');if(b)b.style.display='none';}
 
 // ── RESERVAS ──
+let resSortCol=null, resSortDir=1;
+const RES_SORT_DEFS={
+  1:{key:'depto',type:'text'},
+  2:{key:'huesped',type:'text'},
+  3:{key:'checkin',type:'date'},
+  4:{key:'checkout',type:'date'},
+  5:{key:'noches',type:'num',calc:true},
+  6:{key:'precio',type:'num'},
+  7:{key:'subtotal',type:'num',calc:true},
+  8:{key:'airbnb',type:'num',calc:true},
+  9:{key:'neto',type:'num',calc:true},
+  10:{key:'gestion',type:'num',calc:true},
+  11:{key:'liquido',type:'num',calc:true},
+  12:{key:'estado',type:'text'},
+  13:{key:'destino',type:'text'},
+  14:{key:'senia',type:'num'},
+  15:{key:'saldo',type:'num'}
+};
+function getResSortValue(r,def){
+  if(def.calc){
+    const c=calc(r);
+    return c[{noches:'n',subtotal:'sub',airbnb:'air',neto:'net',gestion:'ges',liquido:'liq'}[def.key]];
+  }
+  if(def.type==='num') return parseFloat(r[def.key])||0;
+  if(def.type==='date') return r[def.key]||'';
+  return (r[def.key]||'').toString().toLowerCase();
+}
+function sortReservas(idx){
+  const def=RES_SORT_DEFS[idx];
+  if(!def) return;
+  if(resSortCol===idx) resSortDir*=-1; else {resSortCol=idx;resSortDir=1;}
+  for(let i=1;i<=15;i++){const el=$('sa-'+i);if(el)el.textContent=(i===resSortCol)?(resSortDir===1?' ▲':' ▼'):'';}
+  renderReservas();
+}
 function badgeClass(estado){
   return estado==='Confirmada'?'badge-ok':
     estado==='Pendiente'?'badge-warn':
@@ -1311,7 +1348,18 @@ function badgeClass(estado){
 function renderReservas(){
   const ia=cu==='admin',fd=$('fil-depto').value,fe=$('fil-estado').value;
   const fn=($('fil-nombre')?.value||'').toLowerCase().trim();
-  const data=reservas.filter(r=>DEPTOS.includes(r.depto)&&(!fd||r.depto===fd)&&(!fe||r.estado===fe)&&(!fn||r.huesped.toLowerCase().includes(fn))).sort((a,b)=>new Date(b.creado)-new Date(a.creado));
+  let data=reservas.filter(r=>DEPTOS.includes(r.depto)&&(!fd||r.depto===fd)&&(!fe||r.estado===fe)&&(!fn||r.huesped.toLowerCase().includes(fn)));
+  if(resSortCol&&RES_SORT_DEFS[resSortCol]){
+    const def=RES_SORT_DEFS[resSortCol];
+    data=data.sort((a,b)=>{
+      const va=getResSortValue(a,def),vb=getResSortValue(b,def);
+      if(va<vb)return -1*resSortDir;
+      if(va>vb)return 1*resSortDir;
+      return 0;
+    });
+  }else{
+    data=data.sort((a,b)=>new Date(b.creado)-new Date(a.creado));
+  }
   const tb=$('tabla-reservas');
   if(!data.length){tb.innerHTML=`<tr><td colspan="16" style="text-align:center;padding:40px;color:var(--muted)">Sin reservas</td></tr>`;return;}
   tb.innerHTML=data.map((r,i)=>{const c=calc(r);const senia=r.senia||0,saldo=r.saldo||0,pend=Math.max(0,c.sub-senia-saldo);
@@ -1775,6 +1823,15 @@ function renderTimeline(){
     const dash=res.estado==='Pendiente'||res.estado==='Stand by';
     h+=`<div class="tl-bar" data-id="${res.id}" onpointerdown="tlDown(event,'${res.id}')" title="${esc(res.huesped)} · ${res.estado}" style="position:absolute;left:${left}px;top:${top}px;width:${w}px;height:${TL_BARH}px;background:${origenColor(res)};${clip}${dash?'opacity:.92;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.55);':''}"><span class="tl-bar-nm">${nm}</span></div>`;
   });
+  // Marcador de checkout — se ve aunque nadie entre ese mismo día
+  reservas.forEach(res=>{
+    if(res.estado==='Cancelada')return;
+    const r=DEPTOS.indexOf(res.depto); if(r<0)return;
+    const eIdx=tlDayIdx(res.checkout,anio,mes);
+    if(eIdx<0||eIdx>=dim)return;
+    const top=r*TL_ROWH+(TL_ROWH-TL_BARH)/2,left=TL_LW+eIdx*TL_COLW;
+    h+=`<div onclick="openCalPopup('${res.id}')" title="Check-out: ${esc(res.huesped)}" style="position:absolute;left:${left}px;top:${top}px;width:10px;height:${TL_BARH}px;background:${origenColor(res)};opacity:.55;clip-path:polygon(0 0,100% 50%,0 100%);cursor:pointer;z-index:10"></div>`;
+  });
   h+=`</div></div>`;
   $('calendario-grid').innerHTML=h;
   $('cal-legend').innerHTML=ocuLegendHTML();
@@ -1829,6 +1886,15 @@ function renderTimelineSemana(){
     const clip=(bs<0?'border-top-left-radius:2px;border-bottom-left-radius:2px;':'')+(be>nDays?'border-top-right-radius:2px;border-bottom-right-radius:2px;':'');
     const dash=res.estado==='Pendiente'||res.estado==='Stand by';
     h+=`<div class="tl-bar" data-id="${res.id}" onpointerdown="tlDown(event,'${res.id}')" title="${esc(res.huesped)} · ${res.estado}" style="position:absolute;left:${left}px;top:${top}px;width:${w}px;height:${TL_BARH}px;background:${origenColor(res)};${clip}${dash?'opacity:.92;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.55);':''}"><span class="tl-bar-nm" style="font-size:.78rem">${nm}</span></div>`;
+  });
+  // Marcador de checkout — se ve aunque nadie entre ese mismo día
+  reservas.forEach(res=>{
+    if(res.estado==='Cancelada')return;
+    const r=DEPTOS.indexOf(res.depto); if(r<0)return;
+    const eIdx=tlIdxFrom(startISO,res.checkout);
+    if(eIdx<0||eIdx>=nDays)return;
+    const top=r*TL_ROWH+(TL_ROWH-TL_BARH)/2,left=TL_LW+eIdx*colW;
+    h+=`<div onclick="openCalPopup('${res.id}')" title="Check-out: ${esc(res.huesped)}" style="position:absolute;left:${left}px;top:${top}px;width:10px;height:${TL_BARH}px;background:${origenColor(res)};opacity:.55;clip-path:polygon(0 0,100% 50%,0 100%);cursor:pointer;z-index:10"></div>`;
   });
   h+=`</div></div>`;
   $('calendario-grid').innerHTML=h;
