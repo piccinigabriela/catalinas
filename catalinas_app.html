@@ -592,6 +592,11 @@ html.dark .rb-name{color:var(--paper);}
           <select id="fil-depto"><option value="">Todos</option><option value="D02">1A</option><option value="D03">2C</option><option value="D04">2D</option><option value="D07">1B</option></select>
           <label>Estado</label>
           <select id="fil-estado"><option value="">Todos</option><option value="Confirmada">Confirmada</option><option value="Pendiente">Pendiente</option><option value="Stand by">Stand by</option><option value="Shown">Shown</option><option value="Non show">Non show</option><option value="Cancelada">Cancelada</option><option value="Cortesía">Cortesía</option><option value="Devolución">Devolución</option></select>
+          <label>Check-in</label>
+          <input type="date" id="fil-desde" title="Check-in desde" style="padding:6px 8px;border:1px solid var(--line);border-radius:var(--r);font-size:0.8rem;color:var(--text);background:var(--white)" onchange="renderReservas()">
+          <span style="color:var(--muted);font-size:0.8rem">→</span>
+          <input type="date" id="fil-hasta" title="Check-in hasta" style="padding:6px 8px;border:1px solid var(--line);border-radius:var(--r);font-size:0.8rem;color:var(--text);background:var(--white)" onchange="renderReservas()">
+          <button class="btn-icon-sm" onclick="$('fil-desde').value='';$('fil-hasta').value='';renderReservas()" title="Limpiar fechas"><svg><use href="#i-close"/></svg></button>
           <input type="text" id="fil-nombre" placeholder="🔍 Buscar huésped..." style="padding:6px 12px;border:1px solid var(--line);border-radius:var(--r);font-size:0.82rem;color:var(--text);background:var(--white);min-width:180px;" oninput="renderReservas()">
           <div class="export-group">
             <button class="btn btn-outline btn-sm" onclick="exportReservas()"><svg><use href="#i-download"/></svg>CSV</button>
@@ -1362,7 +1367,8 @@ function badgeClass(estado){
 function renderReservas(){
   const ia=cu==='admin',fd=$('fil-depto').value,fe=$('fil-estado').value;
   const fn=($('fil-nombre')?.value||'').toLowerCase().trim();
-  let data=reservas.filter(r=>DEPTOS.includes(r.depto)&&(!fd||r.depto===fd)&&(!fe||r.estado===fe)&&(!fn||r.huesped.toLowerCase().includes(fn)));
+  const fDesde=$('fil-desde')?.value||'',fHasta=$('fil-hasta')?.value||'';
+  let data=reservas.filter(r=>DEPTOS.includes(r.depto)&&(!fd||r.depto===fd)&&(!fe||r.estado===fe)&&(!fn||r.huesped.toLowerCase().includes(fn))&&(!fDesde||r.checkin>=fDesde)&&(!fHasta||r.checkin<=fHasta));
   if(resSortCol&&RES_SORT_DEFS[resSortCol]){
     const def=RES_SORT_DEFS[resSortCol];
     data=data.sort((a,b)=>{
@@ -1444,7 +1450,8 @@ function exportReservas(){
 }
 function exportReservasPDF(){
   const fd=$('fil-depto').value,fe=$('fil-estado').value;
-  const data=reservas.filter(r=>DEPTOS.includes(r.depto)&&(!fd||r.depto===fd)&&(!fe||r.estado===fe)).sort((a,b)=>a.checkin.localeCompare(b.checkin));
+  const fDesde=$('fil-desde')?.value||'',fHasta=$('fil-hasta')?.value||'';
+  const data=reservas.filter(r=>DEPTOS.includes(r.depto)&&(!fd||r.depto===fd)&&(!fe||r.estado===fe)&&(!fDesde||r.checkin>=fDesde)&&(!fHasta||r.checkin<=fHasta)).sort((a,b)=>a.checkin.localeCompare(b.checkin));
   if(!data.length){toast('No hay reservas para exportar',false);return;}
   const {jsPDF}=window.jspdf;
   const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
