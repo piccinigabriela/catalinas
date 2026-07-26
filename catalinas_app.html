@@ -1376,7 +1376,7 @@ function renderReservas(){
   }
   const tb=$('tabla-reservas');
   if(!data.length){tb.innerHTML=`<tr><td colspan="16" style="text-align:center;padding:40px;color:var(--muted)">Sin reservas</td></tr>`;return;}
-  tb.innerHTML=data.map((r,i)=>{const c=calc(r);const senia=r.senia||0,saldo=r.saldo||0,pend=Math.max(0,c.sub-senia-saldo);
+  tb.innerHTML=data.map((r,i)=>{const c=calc(r);const senia=r.senia||0,saldo=r.saldo||0,pend=Math.max(0,c.net-senia-saldo);
     return`<tr>
       <td class="res-sticky-1" style="color:var(--muted);font-weight:600">${i+1}</td>
       <td class="res-sticky-2"><span class="depto-tag" style="background:${DC[r.depto]}">${DN[r.depto]}</span></td>
@@ -1971,7 +1971,7 @@ function openCalPopup(id){
   const pop=$('cal-popup');
   $('cal-popup-header').style.background=DC[r.depto];
   $('cal-popup-nombre').textContent=r.huesped+(r.nac?' · '+r.nac:'');
-  const senia=r.senia||0,saldo=r.saldo||0,pend=Math.max(0,c.sub-senia-saldo);
+  const senia=r.senia||0,saldo=r.saldo||0,pend=Math.max(0,c.net-senia-saldo);
   $('cal-popup-body').innerHTML=`
     <div class="cal-popup-field"><div class="cal-popup-label">Depto</div><div class="cal-popup-value"><span class="depto-tag" style="background:${DC[r.depto]}">${DN[r.depto]}</span></div></div>
     <div class="cal-popup-field"><div class="cal-popup-label">Estado</div><div class="cal-popup-value"><span class="badge ${badgeClass(r.estado)}">${r.estado}</span></div></div>
@@ -2872,8 +2872,8 @@ function editRes(id){
       $('e-resumen-ges').textContent=fmt(c.ges);
       $('e-resumen-liq').textContent=fmt(c.liq);
       const senia=parseFloat($('e-senia').value)||0,saldo=parseFloat($('e-saldo').value)||0;
-      const pend=Math.max(0,c.sub-senia-saldo);
-      $('e-pago-resumen').innerHTML=`Total: <b>${fmt(c.sub)}</b> · Seña: <b>${fmt(senia)}</b> · Saldo: <b>${fmt(saldo)}</b> · <span style="color:${pend>0?'var(--err)':'var(--ok)'}">Pendiente: <b>${fmt(pend)}</b></span>`;
+      const pend=Math.max(0,c.net-senia-saldo);
+      $('e-pago-resumen').innerHTML=`Total: <b>${fmt(c.sub)}</b>${c.air>0?` · Com. plataforma: <b style="color:var(--err)">-${fmt(c.air)}</b> · A cobrar: <b>${fmt(c.net)}</b>`:''} · Seña: <b>${fmt(senia)}</b> · Saldo: <b>${fmt(saldo)}</b> · <span style="color:${pend>0?'var(--err)':'var(--ok)'}">Pendiente: <b>${fmt(pend)}</b></span>`;
     } else {
       ['e-resumen-noches','e-resumen-sub','e-resumen-ges','e-resumen-liq'].forEach(i=>$(i).textContent='—');
     }
@@ -3075,7 +3075,7 @@ async function xeniaSend(){
   const EXCL=['Cancelada','Cortesía','Non show','Stand by','Devolución'];
   const em=reservas.filter(r=>{const d=new Date(r.checkin);return!EXCL.includes(r.estado)&&d.getMonth()===m&&d.getFullYear()===y;});
   const ingMes=em.reduce((s,r)=>s+calc(r).liq,0);
-  const pendientes=reservas.filter(r=>!EXCL.includes(r.estado)&&r.checkin>=today).filter(r=>{const c=calc(r);return(r.senia||0)+(r.saldo||0)<c.sub;});
+  const pendientes=reservas.filter(r=>!EXCL.includes(r.estado)&&r.checkin>=today).filter(r=>{const c=calc(r);return(r.senia||0)+(r.saldo||0)<c.net;});
 
   const ctx=`Sos Xenia, asistente de hospitalidad de CheckInn para Catalinas Norte, Buenos Aires. Respondé siempre en español rioplatense, de forma concisa y cálida. Usá emojis con moderación. La propiedad tiene 7 departamentos en Catalinas Norte, CABA, cerca de Retiro y Puerto Madero.
 
