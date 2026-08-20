@@ -407,13 +407,13 @@ html.dark .xenia-msg.bot{background:var(--paper-3);}
 html.dark .xenia-input{background:var(--paper-3);}
 .tl-bar{display:flex;align-items:center;padding:0 8px;border-radius:8px;color:#fff;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;overflow:hidden;box-shadow:0 1px 4px -1px rgba(60,30,0,.35);z-index:10;transition:box-shadow .15s,filter .15s;}
 .tl-bar:hover{filter:brightness(1.07);}
-.tl-bar-nm{font-weight:600;font-size:0.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'Figtree',sans-serif;}
-.ocu-stats-row{display:grid;grid-template-columns:repeat(3,1fr) 1.3fr;gap:12px;margin-bottom:16px;}
-.ocu-stat{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px 20px;box-shadow:var(--shadow-1);}
-.os-l{font-size:.62rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700;}
-.os-v{font-family:'Comfortaa',sans-serif;font-size:1.7rem;font-weight:700;letter-spacing:-.02em;line-height:1;margin:7px 0 3px;}
-.os-s{font-size:.72rem;color:var(--accent-2);font-weight:600;}
-.ocu-spark{background:#241c10;border-radius:var(--r-lg);padding:16px 20px;box-shadow:var(--shadow-1);}
+.tl-bar-nm{font-weight:600;font-size:0.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'Figtree',sans-serif;}
+.ocu-stats-row{display:grid;grid-template-columns:repeat(3,1fr) 1.3fr;gap:10px;margin-bottom:10px;}
+.ocu-stat{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:10px 14px;box-shadow:var(--shadow-1);}
+.os-l{font-size:.58rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700;}
+.os-v{font-family:'Comfortaa',sans-serif;font-size:1.25rem;font-weight:700;letter-spacing:-.02em;line-height:1;margin:4px 0 2px;}
+.os-s{font-size:.66rem;color:var(--accent-2);font-weight:600;}
+.ocu-spark{background:#241c10;border-radius:var(--r-lg);padding:10px 14px;box-shadow:var(--shadow-1);}
 .ocu-spark .os-v{color:#fff;}
 @media(max-width:860px){.ocu-stats-row{grid-template-columns:1fr 1fr;}.ocu-spark{grid-column:1/-1;}.ocu-spark svg{width:100%;height:auto;}}
 /* ── RENDIMIENTO premium ── */
@@ -429,6 +429,11 @@ html.dark .rend-kpi.dark{background:#2a1f10;border-color:#3a2e1d;}
 html.dark .rend-kpi.dark .rk-v{color:#fff;}
 .rk-s{font-size:.72rem;font-weight:600;}
 .rend-split{display:grid;grid-template-columns:1.25fr 1fr;gap:14px;align-items:start;}
+.donut-wrap{display:flex;align-items:center;gap:16px;}
+.donut-legend{flex:1;display:flex;flex-direction:column;gap:7px;}
+.donut-legend-item{display:flex;align-items:center;justify-content:space-between;font-size:.74rem;color:var(--ink-2);}
+.donut-legend-item .sw{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;}
+.donut-legend-item b{color:var(--ink);}
 .rend-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:22px 24px;box-shadow:var(--shadow-1);}
 .rend-card.dark{background:var(--ink);border-color:var(--ink);}
 html.dark .rend-card.dark{background:#1e2a1e;border-color:#2a3a2a;}
@@ -624,9 +629,12 @@ html.dark .rb-name{color:var(--paper);}
               <button id="btn-vista-mes" class="btn btn-primary btn-sm" onclick="setVistaCalendario('mes')">Mensual</button>
               <button id="btn-vista-sem" class="btn btn-outline btn-sm" onclick="setVistaCalendario('sem')">Semanal</button>
             </div>
-            <label>Mes</label>
-            <select id="cal-mes"><option value="0">Enero</option><option value="1">Febrero</option><option value="2">Marzo</option><option value="3">Abril</option><option value="4">Mayo</option><option value="5">Junio</option><option value="6">Julio</option><option value="7">Agosto</option><option value="8">Septiembre</option><option value="9">Octubre</option><option value="10">Noviembre</option><option value="11">Diciembre</option></select>
-            <label id="lbl-anio">Año</label><select id="cal-anio"></select>
+            <div id="nav-mes" style="display:flex;align-items:center;gap:6px">
+              <button class="btn btn-outline btn-sm" onclick="moverTl(-15)">◀</button>
+              <span id="tl-label" style="font-size:12px;font-weight:500;min-width:170px;text-align:center"></span>
+              <button class="btn btn-outline btn-sm" onclick="moverTl(15)">▶</button>
+              <button class="btn btn-outline btn-sm" onclick="irHoyTl()">Hoy</button>
+            </div>
             <div id="nav-semana" style="display:none;align-items:center;gap:6px">
               <button class="btn btn-outline btn-sm" onclick="moverSemana(-1)">◀</button>
               <span id="semana-label" style="font-size:12px;font-weight:500;min-width:160px;text-align:center"></span>
@@ -634,6 +642,9 @@ html.dark .rb-name{color:var(--paper);}
               <button class="btn btn-outline btn-sm" onclick="irHoySemana()">Hoy</button>
             </div>
             <div class="export-group">
+              <label style="font-size:11px;color:var(--muted)">Exportar</label>
+              <select id="cal-mes" style="font-size:12px"><option value="0">Enero</option><option value="1">Febrero</option><option value="2">Marzo</option><option value="3">Abril</option><option value="4">Mayo</option><option value="5">Junio</option><option value="6">Julio</option><option value="7">Agosto</option><option value="8">Septiembre</option><option value="9">Octubre</option><option value="10">Noviembre</option><option value="11">Diciembre</option></select>
+              <select id="cal-anio" style="font-size:12px"></select>
               <button class="btn btn-outline btn-sm" onclick="exportOcupacion()"><svg><use href="#i-download"/></svg>CSV</button>
               <button class="btn btn-accent btn-sm" onclick="exportOcupacionPDF()"><svg><use href="#i-pdf"/></svg>PDF</button>
             </div>
@@ -1555,17 +1566,29 @@ function importarCSV(input){
 let _vistaCalendario = 'mes'; // 'mes' | 'sem'
 let _calViewInit = false; // en móvil arranca en Semanal la 1ª vez
 let _semanaBase = null; // lunes de la semana activa
+let _tlBase = null; // fecha de inicio de la ventana continua (vista 'mes')
+const TL_WINDOW_DAYS = 45;
+function moverTl(n){_tlBase=tlAddDays(_tlBase,n);actualizarLabelTl();renderCalendario();}
+function irHoyTl(){_tlBase=tlAddDays(new Date().toISOString().slice(0,10),-7);actualizarLabelTl();renderCalendario();}
+function actualizarLabelTl(){
+  const fin=tlAddDays(_tlBase,TL_WINDOW_DAYS-1);
+  const fmt=iso=>{const[y,m,d]=iso.split('-');return `${d}/${m}`;};
+  const lbl=$('tl-label');if(lbl)lbl.textContent=`${fmt(_tlBase)} — ${fmt(fin)}`;
+}
 
 function setVistaCalendario(v){
   _vistaCalendario = v;
   $('btn-vista-mes').className = 'btn btn-sm ' + (v==='mes' ? 'btn-primary' : 'btn-outline');
   $('btn-vista-sem').className = 'btn btn-sm ' + (v==='sem' ? 'btn-primary' : 'btn-outline');
-  $('cal-vista-label').textContent = v==='mes' ? 'vista mensual' : 'vista semanal';
+  $('cal-vista-label').textContent = v==='mes' ? 'vista continua' : 'vista semanal';
   // Mostrar/ocultar controles
   const showMes = v === 'mes';
-  document.querySelectorAll('#cal-mes, label[for="cal-mes"]').forEach(el=>el.style.display=showMes?'':'none');
-  document.querySelectorAll('#lbl-anio, #cal-anio').forEach(el=>el.style.display=showMes?'':'none');
+  $('nav-mes').style.display = showMes ? 'flex' : 'none';
   $('nav-semana').style.display = showMes ? 'none' : 'flex';
+  if(v==='mes'){
+    if(!_tlBase) _tlBase = tlAddDays(new Date().toISOString().slice(0,10), -7);
+    actualizarLabelTl();
+  }
   if(v==='sem'){
     if(!_semanaBase) _semanaBase = getLunes(new Date());
     actualizarLabelSemana();
@@ -1740,7 +1763,7 @@ function renderCalendario(){
     +`<span class="cal-legend-item"><span class="sw" style="background:var(--paper-2);border:1px solid var(--line-2)"></span>Libre</span>`;
 }
 // ── TIMELINE (Gantt arrastrable) ──────────────────────────────────
-const TL_COLW=42,TL_ROWH=48,TL_BARH=34,TL_HEAD=42,TL_LW=66;
+const TL_COLW=60,TL_ROWH=62,TL_BARH=44,TL_HEAD=48,TL_LW=66;
 let _tlColW=42;
 // Color por ORIGEN de la reserva (no por depto)
 const ORIGEN_COL={Airbnb:'#cf5a34',Airbnb15:'#cf5a34',Booking:'#3a6079',Directo:'#6a8a4a',Expedia:'#9a7b3a',Otros:'#8a6a55'};
@@ -1770,7 +1793,7 @@ function renderOcuStats(startISO,nDays){
   const ocupPct=Math.round(totNoches/(units*nDays)*100);
   const maxDay=Math.max(units,...perDay);
   // sparkline (barras)
-  const W=212,H=46,gap=nDays>20?1:2,bw=(W-(nDays-1)*gap)/nDays;
+  const W=212,H=32,gap=nDays>20?1:2,bw=(W-(nDays-1)*gap)/nDays;
   let svg=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="display:block">`;
   const todayIdx=tlIdxFrom(startISO,new Date().toISOString().slice(0,10));
   for(let i=0;i<nDays;i++){
@@ -1796,27 +1819,29 @@ function tlDayIdx(iso,anio,mes){const[y,m,d]=tlIsoParts(iso);return Math.round((
 function tlAddDays(iso,n){const[y,m,d]=tlIsoParts(iso);return new Date(Date.UTC(y,m,d+n)).toISOString().slice(0,10);}
 
 function renderTimeline(){
-  const mes=parseInt($('cal-mes').value),anio=parseInt($('cal-anio').value);
-  const dim=new Date(anio,mes+1,0).getDate();
+  if(!_tlBase) _tlBase = tlAddDays(new Date().toISOString().slice(0,10), -7);
+  const dim=TL_WINDOW_DAYS;
   const rows=DEPTOS.length, W=TL_LW+dim*TL_COLW;
   const todayISO=new Date().toISOString().slice(0,10);
-  const todayIdx=tlDayIdx(todayISO,anio,mes);
+  const todayIdx=tlIdxFrom(_tlBase,todayISO);
+  const MESES3=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   _tlColW=TL_COLW;
-  renderOcuStats(`${anio}-${String(mes+1).padStart(2,'0')}-01`,dim);
+  renderOcuStats(_tlBase,dim);
+  actualizarLabelTl();
   let h=`<div style="position:relative;width:${W}px;min-width:${W}px;font-size:0.72rem">`;
   // header
   h+=`<div style="position:relative;height:${TL_HEAD}px;border-bottom:1px solid var(--line)">`;
   h+=`<div style="position:absolute;left:0;top:0;width:${TL_LW}px;height:${TL_HEAD}px;display:flex;align-items:flex-end;padding:0 0 7px 4px;font-size:0.6rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Depto</div>`;
-  for(let i=0;i<dim;i++){const dow=new Date(anio,mes,i+1).getDay();const wk=dow===0||dow===6;const td=i===todayIdx;
-    h+=`<div style="position:absolute;left:${TL_LW+i*TL_COLW}px;top:0;width:${TL_COLW}px;height:${TL_HEAD}px;display:flex;flex-direction:column;align-items:center;justify-content:center;${td?'background:var(--accent-soft);':''}">
-      <span style="font-size:.56rem;text-transform:uppercase;font-weight:600;color:${td?'var(--accent)':(wk?'var(--muted-2)':'var(--muted)')}">${TL_WD[dow]}</span>
-      <span style="font-family:'Comfortaa',sans-serif;font-size:.86rem;font-weight:600;line-height:1.1;color:${td?'var(--accent)':'var(--ink)'}">${i+1}</span>
+  for(let i=0;i<dim;i++){const iso=tlAddDays(_tlBase,i);const dt=new Date(iso+'T00:00:00Z');const dow=dt.getUTCDay();const wk=dow===0||dow===6;const td=i===todayIdx;const diaNum=dt.getUTCDate();const esInicioMes=diaNum===1;
+    h+=`<div style="position:absolute;left:${TL_LW+i*TL_COLW}px;top:0;width:${TL_COLW}px;height:${TL_HEAD}px;display:flex;flex-direction:column;align-items:center;justify-content:center;${td?'background:var(--accent-soft);':''}${esInicioMes?'border-left:1px dashed var(--muted-2);':''}">
+      <span style="font-size:.56rem;text-transform:uppercase;font-weight:600;color:${td?'var(--accent)':(wk?'var(--muted-2)':'var(--muted)')}">${esInicioMes?MESES3[dt.getUTCMonth()]:TL_WD[dow]}</span>
+      <span style="font-family:'Comfortaa',sans-serif;font-size:.95rem;font-weight:600;line-height:1.1;color:${td?'var(--accent)':'var(--ink)'}">${diaNum}</span>
     </div>`;}
   h+=`</div>`;
   // canvas
   h+=`<div id="tl-canvas" style="position:relative;height:${rows*TL_ROWH}px">`;
-  for(let i=0;i<dim;i++){const dow=new Date(anio,mes,i+1).getDay();const wk=dow===0||dow===6;const td=i===todayIdx;
-    h+=`<div style="position:absolute;left:${TL_LW+i*TL_COLW}px;top:0;width:${TL_COLW}px;height:100%;border-left:1px solid var(--line);${td?'background:var(--accent-soft);':(wk?'background:var(--paper-2);':'')}"></div>`;}
+  for(let i=0;i<dim;i++){const iso=tlAddDays(_tlBase,i);const dt=new Date(iso+'T00:00:00Z');const dow=dt.getUTCDay();const wk=dow===0||dow===6;const td=i===todayIdx;const esInicioMes=dt.getUTCDate()===1;
+    h+=`<div style="position:absolute;left:${TL_LW+i*TL_COLW}px;top:0;width:${TL_COLW}px;height:100%;${esInicioMes?'border-left:1px dashed var(--muted-2);':'border-left:1px solid var(--line);'}${td?'background:var(--accent-soft);':(wk?'background:var(--paper-2);':'')}"></div>`;}
   DEPTOS.forEach((code,r)=>{
     h+=`<div style="position:absolute;left:0;right:0;top:${r*TL_ROWH}px;height:${TL_ROWH}px;border-bottom:1px solid var(--line)"></div>`;
     h+=`<div style="position:absolute;left:0;top:${r*TL_ROWH}px;width:${TL_LW}px;height:${TL_ROWH}px;display:flex;align-items:center;justify-content:center;background:var(--ink);color:var(--paper);font-weight:700;font-size:.7rem;z-index:2">${DN[code]}</div>`;
@@ -1825,7 +1850,7 @@ function renderTimeline(){
   // bloqueos iCal
   const bloqueos=lo('cn_bloqueos',{});
   DEPTOS.forEach((code,r)=>{(bloqueos[code]||[]).forEach(b=>{
-    let s=tlDayIdx(b.start,anio,mes),e=tlDayIdx(b.end,anio,mes);
+    let s=tlIdxFrom(_tlBase,b.start),e=tlIdxFrom(_tlBase,b.end);
     if(e<=0||s>=dim)return; s=Math.max(0,s); e=Math.min(dim,e); if(e<=s)return;
     const plat=b.plat==='Bk'?'Booking':'Airbnb';
     const stripe=b.plat==='Bk'?'repeating-linear-gradient(45deg,#2a4a7a,#2a4a7a 5px,#3a5d96 5px,#3a5d96 10px)':'repeating-linear-gradient(45deg,#b07a3a,#b07a3a 5px,#c89455 5px,#c89455 10px)';
@@ -1835,7 +1860,7 @@ function renderTimeline(){
   reservas.forEach(res=>{
     if(res.estado==='Cancelada')return;
     const r=DEPTOS.indexOf(res.depto); if(r<0)return;
-    let s=tlDayIdx(res.checkin,anio,mes),e=tlDayIdx(res.checkout,anio,mes);
+    let s=tlIdxFrom(_tlBase,res.checkin),e=tlIdxFrom(_tlBase,res.checkout);
     if(e<=0||s>=dim)return;
     const sC=Math.max(0,s),eC=Math.min(dim,e); if(eC<=sC)return;
     const pend=bloqueaFechas(res);
@@ -1849,7 +1874,7 @@ function renderTimeline(){
   reservas.forEach(res=>{
     if(res.estado==='Cancelada')return;
     const r=DEPTOS.indexOf(res.depto); if(r<0)return;
-    const eIdx=tlDayIdx(res.checkout,anio,mes);
+    const eIdx=tlIdxFrom(_tlBase,res.checkout);
     if(eIdx<0||eIdx>=dim)return;
     const top=r*TL_ROWH+(TL_ROWH-TL_BARH)/2,left=TL_LW+eIdx*TL_COLW;
     h+=`<div onclick="openCalPopup('${res.id}')" title="Check-out: ${esc(res.huesped)}" style="position:absolute;left:${left}px;top:${top}px;width:10px;height:${TL_BARH}px;background:${origenColor(res)};opacity:.55;clip-path:polygon(0 0,100% 50%,0 100%);cursor:pointer;z-index:10"></div>`;
@@ -2164,6 +2189,27 @@ function exportGastosPDF(){
 }
 
 // ── RENDIMIENTO ──
+function donutChartHTML(segments,totalLabel){
+  const total=segments.reduce((s,x)=>s+x.value,0)||1;
+  const R=42,C=2*Math.PI*R,SW=16;
+  let cum=0,circles='';
+  segments.forEach(s=>{
+    const len=Math.max(0,s.value/total*C);
+    circles+=`<circle cx="60" cy="60" r="${R}" fill="none" stroke="${s.color}" stroke-width="${SW}" stroke-dasharray="${len.toFixed(1)} ${(C-len).toFixed(1)}" stroke-dashoffset="${(-cum).toFixed(1)}" transform="rotate(-90 60 60)"/>`;
+    cum+=len;
+  });
+  const legend=segments.map(s=>`<div class="donut-legend-item"><span><span class="sw" style="background:${s.color}"></span>${esc(s.label)}</span><b>${Math.round(s.value/total*100)}%</b></div>`).join('');
+  return `<div class="donut-wrap">
+    <div style="position:relative;width:120px;height:120px;flex-shrink:0">
+      <svg viewBox="0 0 120 120" width="120" height="120">${circles}</svg>
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 8px">
+        <div style="font-family:'Comfortaa',sans-serif;font-size:.82rem;font-weight:700;line-height:1.15;color:var(--ink)">${totalLabel}</div>
+        <div style="font-size:.52rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">total</div>
+      </div>
+    </div>
+    <div class="donut-legend">${legend}</div>
+  </div>`;
+}
 function renderRendimiento(){
   const mv=$('rend-mes').value,ay=parseInt($('rend-anio').value);
   const hm=mv!=='',mes=hm?parseInt(mv):-1;
@@ -2224,6 +2270,11 @@ function renderRendimiento(){
   if(dKeys.length)destHTML=`<div class="rend-card" style="padding:18px 22px">
     <div class="rend-bd-title">Líquido por destino de cobro</div>
     ${dKeys.map(k=>`<div class="rend-bd-item"><span>${esc(k)}</span><b style="color:var(--purple)">${fmt(destinos[k])}</b></div>`).join('')}</div>`;
+  // ingresos por canal (Airbnb 3% y 15% se agrupan como un solo canal "Airbnb")
+  const canalMap={};
+  fil.forEach(r=>{const c=calc(r);const canal=r.plataforma==='Airbnb15'?'Airbnb':(r.plataforma||'Otros');canalMap[canal]=(canalMap[canal]||0)+c.sub;});
+  const canalSegs=Object.keys(canalMap).map(k=>({label:k,value:canalMap[k],color:ORIGEN_COL[k]||ORIGEN_COL.Otros}));
+  const canalHTML=canalSegs.length?donutChartHTML(canalSegs,fmt(ts)):`<div class="rend-card-sub">Sin datos en el período</div>`;
   $('rend-totals').innerHTML=`
     <div class="rend-kpi-grid">${kpiHTML}</div>
     <div class="rend-split">
@@ -2237,6 +2288,11 @@ function renderRendimiento(){
           <div class="rk-l" style="color:rgba(255,255,255,.55)">Resultado neto del período</div>
           <div style="font-family:'Comfortaa',sans-serif;font-size:2.2rem;font-weight:600;color:#fff;letter-spacing:-.02em;margin:8px 0 2px">${fmt(neto)}</div>
           <div style="font-size:.78rem;color:#ff9d6b;font-weight:600">${ts?('margen '+Math.round(neto/ts*100)+'% · '+tno+' noches'):'—'}</div>
+        </div>
+        <div class="rend-card" style="padding:18px 22px">
+          <div class="rend-card-title" style="font-size:.92rem">Ingresos por canal</div>
+          <div class="rend-card-sub">Bruto del período</div>
+          <div style="margin-top:14px">${canalHTML}</div>
         </div>
         <div class="rend-card" style="padding:18px 22px">${breakdown}</div>
         ${destHTML}
@@ -3006,7 +3062,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     const el=$(id);if(el){el.addEventListener('input',calcNights);el.addEventListener('change',calcNights);}
   });
   ['fil-depto','fil-estado'].forEach(id=>$(id).addEventListener('change',renderReservas));
-  ['cal-mes','cal-anio'].forEach(id=>$(id).addEventListener('change',renderCalendario));
+  // cal-mes/cal-anio ahora solo alimentan exportOcupacion()/exportOcupacionPDF(), no re-renderizan la vista
   ['rend-mes','rend-anio'].forEach(id=>$(id).addEventListener('change',renderRendimiento));
   $('edit-modal').addEventListener('click',e=>{if(e.target===$('edit-modal'))closeEdit();});
 });
