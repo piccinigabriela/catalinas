@@ -1473,7 +1473,8 @@ function exportReservasPDF(){
   pdfHeader(doc,'Reservas',sub);
   const body=data.map(r=>{const c=calc(r);return[DN[r.depto],r.huesped,fmtD(r.checkin),fmtD(r.checkout),c.n,fmtN(r.precio),fmtN(c.sub),fmtN(c.air),fmtN(c.ges),fmtN(c.liq),r.estado];});
   const totSub=data.reduce((s,r)=>s+calc(r).sub,0);
-  const totLiq=data.filter(r=>r.estado!=='Cancelada'&&r.estado!=='Cortesía').reduce((s,r)=>s+calc(r).liq,0);
+  const EXCLUIR_TOT=['Cancelada','Cortesía','Non show','Stand by','Devolución'];
+  const totLiq=data.filter(r=>!EXCLUIR_TOT.includes(r.estado)).reduce((s,r)=>s+calc(r).liq,0);
   doc.autoTable({
     startY:44,head:[['Depto','Huésped','Check-in','Check-out','Noches','USD/N','Subtotal','Airbnb','Gestión','Líquido','Estado']],
     body:body,
